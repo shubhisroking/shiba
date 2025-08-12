@@ -9,6 +9,8 @@ import TopBar from "@/components/TopBar";
 
 export default function Home() {
   
+  const SlackId = "U041FQB8VK2";
+
   const games = [
     {
       name: "My Games",
@@ -46,6 +48,11 @@ export default function Home() {
 
   const [appOpen, setAppOpen] = useState("Home");
   const [selectedGame, setSelectedGame] = useState(0);
+  const [disableTopBar, setDisableTopBar] = useState(false);
+
+  const goHome = () => {
+    setAppOpen("Home");
+  };
 
 
   useEffect(() => {
@@ -103,23 +110,33 @@ export default function Home() {
       );
     }
 
-    const components = {
-      "My Games": <MyGamesComponent />,
-      "Global Games": <GlobalGamesComponent />,
-      "Shop": <ShopComponent />,
-      "Help": <HelpComponent />,
+    const componentsMap = {
+      "My Games": MyGamesComponent,
+      "Global Games": GlobalGamesComponent,
+      "Shop": ShopComponent,
+      "Help": HelpComponent,
     };
 
-    const SelectedComponent = components[appOpen];
+    const SelectedComponent = componentsMap[appOpen];
     if (SelectedComponent) {
       return (
         <div style={{ position: "relative", minHeight: "100vh" }}>
-          <TopBar
-            title={games[selectedGame].name}
-            image={games[selectedGame].image}
-            onBack={() => setAppOpen("Home")}
-          />
-          <div style={{ paddingTop: 64 }}>{SelectedComponent}</div>
+          {!disableTopBar && (
+            <TopBar
+              title={games[selectedGame].name}
+              image={games[selectedGame].image}
+              onBack={() => setAppOpen("Home")}
+            />
+          )}
+          <div style={{ paddingTop: disableTopBar ? 0 : 64 }}>
+            <SelectedComponent
+              disableTopBar={disableTopBar}
+              setDisableTopBar={setDisableTopBar}
+              goHome={goHome}
+              token={token}
+              SlackId={SlackId}
+            />
+          </div>
         </div>
       );
     }
