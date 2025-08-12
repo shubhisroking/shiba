@@ -143,7 +143,7 @@ function MovingBackground() {
   );
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }) {
   const games = [
     {
       name: "My Games",
@@ -176,7 +176,7 @@ export default function HomeScreen() {
     },
   ];
 
-  const [selectedGame, setSelectedGame] = useState(0);
+  // selectedGame is now controlled by the parent (index.js)
   const [tokyoTime, setTokyoTime] = useState("");
 
   // Preload SFX and game clip audios for instant playback
@@ -249,7 +249,13 @@ export default function HomeScreen() {
           <p style={{ margin: 0 }}>{tokyoTime}</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100vh", justifyContent: "center" }}>
-          <GameCarousel games={games} onSelect={setSelectedGame} playSound={playSound} />
+          <GameCarousel
+            games={games}
+            onSelect={setSelectedGame}
+            playSound={playSound}
+            setAppOpen={setAppOpen}
+            selectedIndex={selectedGame}
+          />
           <GameDetails game={games[selectedGame]} />
         </div>
         <div style={{

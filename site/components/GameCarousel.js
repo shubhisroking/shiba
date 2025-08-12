@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import GameCard from "@/components/GameCard";
 
-export default function GameCarousel({ games, onSelect, playSound, playClip }) {
+export default function GameCarousel({ games, onSelect, playSound, playClip, setAppOpen, selectedIndex: controlledIndex }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const numGames = games?.length ?? 0;
 
@@ -24,9 +24,15 @@ export default function GameCarousel({ games, onSelect, playSound, playClip }) {
         event.preventDefault();
         playSound?.("prev.mp3");
         if (embla) embla.scrollPrev();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        const activeName = games?.[selectedIndex]?.name;
+        if (activeName) {
+          setAppOpen?.(activeName);
+        }
       }
     },
-    [embla, playSound]
+    [embla, playSound, setAppOpen, games, selectedIndex]
   );
 
   useEffect(() => {
@@ -35,6 +41,12 @@ export default function GameCarousel({ games, onSelect, playSound, playClip }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    if (typeof controlledIndex === "number" && embla) {
+      embla.scrollTo(controlledIndex);
+    }
+  }, [controlledIndex, embla]);
 
   useEffect(() => {
     if (!embla) return undefined;
@@ -90,11 +102,32 @@ export default function GameCarousel({ games, onSelect, playSound, playClip }) {
       <div style={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "center" }}>
         <div ref={viewportRef} style={{ overflow: "hidden", width: "90vw", maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            {games.map((game, idx) => (
-              <div key={game.name} style={{ flex: "0 0 33.3333%", display: "flex", justifyContent: "center", alignItems: "center", padding: "2vw" }}>
-                <GameCard game={game} style={getCardStyle(idx)} />
-              </div>
-            ))}
+            {games.map((game, idx) => {
+              const isActive = idx === selectedIndex;
+              return (
+                <div
+                  key={game.name}
+                  style={{ flex: "0 0 33.3333%", display: "flex", justifyContent: "center", alignItems: "center", padding: "2vw" }}
+                >
+                  <div
+                    role={isActive ? "button" : "presentation"}
+                    tabIndex={isActive ? 0 : -1}
+                    aria-label={isActive ? `Open ${game.name}` : undefined}
+                    aria-disabled={!isActive}
+                    onClick={isActive ? () => setAppOpen?.(game.name) : undefined}
+                    onKeyDown={isActive ? (e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        setAppOpen?.(game.name);
+                      }
+                    } : undefined}
+                    style={{ width: "100%", cursor: isActive ? "pointer" : "default", pointerEvents: isActive ? "auto" : "none" }}
+                  >
+                    <GameCard game={game} style={getCardStyle(idx)} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ export default function GameCard({ game, style }) {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    cursor: "pointer",
     width: "100%",
     aspectRatio: "1 / 1",
     backgroundColor: "white",

@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import HomeScreen from "@/components/HomeScreen";
 import StartScreen from "@/components/StartScreen";
+import MyGamesComponent from "@/components/MyGamesComponent";
+import GlobalGamesComponent from "@/components/GlobalGamesComponent";
+import ShopComponent from "@/components/ShopComponent";
+import HelpComponent from "@/components/HelpComponent";
 
 export default function Home() {
   const [token, setToken] = useState(null);
+
+  const [appOpen, setAppOpen] = useState("Home");
+  const [selectedGame, setSelectedGame] = useState(0);
+
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -47,5 +55,33 @@ export default function Home() {
     return <StartScreen setToken={setToken} requestOtp={requestOtp} verifyOtp={verifyOtp} />;
   }
 
-  return <HomeScreen />;
+  if (token !== null) {
+    if (appOpen === "Home") {
+      return (
+        <HomeScreen
+          appOpen={appOpen}
+          setAppOpen={setAppOpen}
+          selectedGame={selectedGame}
+          setSelectedGame={setSelectedGame}
+        />
+      );
+    }
+
+    const components = {
+      "My Games": <MyGamesComponent />,
+      "Global Games": <GlobalGamesComponent />,
+      "Shop": <ShopComponent />,
+      "Help": <HelpComponent />,
+    };
+
+    const SelectedComponent = components[appOpen];
+    if (SelectedComponent) {
+      return (
+        <div>
+          <button onClick={() => setAppOpen("Home")}>home</button>
+          {SelectedComponent}
+        </div>
+      );
+    }
+  }
 }
