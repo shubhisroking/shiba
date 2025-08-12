@@ -143,38 +143,8 @@ function MovingBackground() {
   );
 }
 
-export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }) {
-  const games = [
-    {
-      name: "My Games",
-      description: "Create, update, and ship your games",
-      image: "MyGames.png",
-      bgColor: "rgba(255, 214, 224, 1)",
-      gameClipAudio: "MyGames.mp3",
-    },
-    {
-      name: "Global Games",
-      description: "View global activity & playtest games",
-      image: "Play.png",
-      bgColor: "rgba(214, 245, 255, 1)",
-      gameClipAudio: "Global.mp3"
+export default function HomeScreen({ games, setAppOpen, selectedGame, setSelectedGame }) {
 
-    },
-    {
-      name: "Shop",
-      description: "Purchase items from the shop.",
-      image: "Shop.png",
-      bgColor: "rgba(214, 255, 214, 1)",
-      gameClipAudio: "Shop.mp3",
-    },
-    {
-      name: "Help",
-      description: "Learn how to use Shiba.",
-      image: "Help.png",
-      bgColor: "rgba(255, 245, 214, 1)",
-      gameClipAudio: "Help.mp3",
-    },
-  ];
 
   // selectedGame is now controlled by the parent (index.js)
   const [tokyoTime, setTokyoTime] = useState("");
