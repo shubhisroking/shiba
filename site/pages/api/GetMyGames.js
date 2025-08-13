@@ -170,6 +170,7 @@ async function fetchPostsForGame(gameId) {
     postId: rec.fields?.PostID || '',
     content: rec.fields?.Content || '',
     createdAt: rec.fields?.['Created At'] || rec.createdTime || '',
+    PlayLink: typeof rec.fields?.PlayLink === 'string' ? rec.fields.PlayLink : '',
     attachments: Array.isArray(rec.fields?.Attachements)
       ? rec.fields.Attachements.map((a) => ({
           url: a?.url,

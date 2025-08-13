@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import CreateGameModal from "@/components/CreateGameModal";
 import useAudioManager from "@/components/useAudioManager";
 import TopBar from "@/components/TopBar";
+import { uploadGame as uploadGameUtil } from "@/components/utils/uploadGame";
 
 
 function ShaderToyBackground() {
@@ -500,12 +501,15 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
   const [isPosting, setIsPosting] = useState(false);
   const [postMessage, setPostMessage] = useState("");
   const [postFiles, setPostFiles] = useState([]);
+  const [postType, setPostType] = useState('moment'); // 'moment' | 'ship' (visual only for now)
   const [isDragging, setIsDragging] = useState(false);
   const [slackProfile, setSlackProfile] = useState(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
   const totalAttachmentBytes = useMemo(() => (postFiles || []).reduce((sum, f) => sum + (typeof f.size === 'number' ? f.size : 0), 0), [postFiles]);
   const overTotalLimit = totalAttachmentBytes > MAX_TOTAL_BYTES;
+  const [buildFile, setBuildFile] = useState(null);
+  const [uploadAuthToken, setUploadAuthToken] = useState(process.env.NEXT_PUBLIC_UPLOAD_AUTH_TOKEN || "NeverTrustTheLiving#446");
 
   useEffect(() => {
     setName(game?.name || "");
@@ -847,9 +851,11 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                 onDrop={(e) => {
                   e.preventDefault();
                   setIsDragActive(false);
-                  const incoming = Array.from(e.dataTransfer?.files || []).filter((f) => {
+                  const incomingAll = Array.from(e.dataTransfer?.files || []);
+                  const incoming = incomingAll.filter((f) => {
                     const t = (f.type || '').toLowerCase();
-                    return t.startsWith('image/') || t.startsWith('video/');
+                    // Only allow PNG for moments; disallow drops for ships
+                    return postType === 'moment' && (t === 'image/png');
                   });
                   if (incoming.length === 0) return;
                   setPostFiles((prev) => {
@@ -903,73 +909,121 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
             )}
 
             <div className="moments-footer">
-              <input
-                id="moments-file-input"
-                type="file"
-                 accept="image/*,video/*"
-                multiple
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const incoming = Array.from(e.target.files || []);
-                  if (incoming.length === 0) return;
-                  setPostFiles((prev) => {
-                    const byKey = new Map();
-                    const addAll = (arr) => {
-                      for (const f of arr) {
-                        const key = `${f.name}|${f.size}|${f.lastModified}`;
-                        if (!byKey.has(key)) byKey.set(key, f);
-                      }
-                    };
-                    addAll(prev || []);
-                    addAll(incoming);
-                    const merged = Array.from(byKey.values());
-                    const total = merged.reduce((sum, f) => sum + (f.size || 0), 0);
-
-                    return merged;
-                  });
-                  e.target.value = '';
-                }}
-              />
-              <button
-                type="button"
-                className="moments-attach-btn"
-                onClick={() => document.getElementById('moments-file-input')?.click()}
-              >
-                Add screenshots{postFiles.length ? ` (${postFiles.length})` : ''}
-              </button>
+              {/* Attachment control: depends on postType */}
+              {postType === 'ship' ? (
+                <>
+                  <input
+                    id="build-file-input"
+                    type="file"
+                    accept=".zip"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = (e.target.files && e.target.files[0]) || null;
+                      setBuildFile(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="moments-attach-btn"
+                    onClick={() => document.getElementById('build-file-input')?.click()}
+                  >
+                    {buildFile ? `Selected: ${buildFile.name}` : 'Upload Godot Web Build'}
+                  </button>
+                  <input type="hidden" value={uploadAuthToken} readOnly />
+                </>
+              ) : (
+                <>
+                  <input
+                    id="moments-file-input"
+                    type="file"
+                    accept="image/png"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const f = (e.target.files && e.target.files[0]) || null;
+                      setPostFiles(f ? [f] : []);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="moments-attach-btn"
+                    onClick={() => document.getElementById('moments-file-input')?.click()}
+                  >
+                    {postFiles.length ? `Selected: ${postFiles[0].name}` : 'Upload PNG (Moment)'}
+                  </button>
+                </>
+              )}
               <div className="moments-footer-spacer" />
+              {/* Visual toggle: Shiba Moment vs Shiba Ship (no functionality yet) */}
+              <div className="moment-type-toggle" role="tablist" aria-label="Post type">
+                <button
+                  type="button"
+                  className={`moment-type-option${postType === 'moment' ? ' active' : ''}`}
+                  aria-selected={postType === 'moment'}
+                  onClick={() => setPostType('moment')}
+                >
+                  Devlog
+                </button>
+                <button
+                  type="button"
+                  className={`moment-type-option${postType === 'ship' ? ' active' : ''}`}
+                  aria-selected={postType === 'ship'}
+                  onClick={() => setPostType('ship')}
+                >
+                  Ship
+                </button>
+              </div>
               <button
                 className="moments-post-btn"
-                disabled={isPosting || !postContent.trim() || overTotalLimit}
+                disabled={
+                  isPosting ||
+                  !postContent.trim() ||
+                  (postType === 'moment' && postFiles.length === 0) ||
+                  (postType === 'ship' && (!buildFile || !uploadAuthToken))
+                }
                 onClick={async () => {
             if (!token || !game?.id || !postContent.trim()) return;
             setIsPosting(true);
             setPostMessage("");
             try {
-              // Prepare optional attachments as base64
-              const attachmentsUpload = await (async () => {
-                const items = [];
-                for (const f of postFiles) {
-                  // Limit 5MB as Airtable content endpoint limit
-                  if (typeof f.size === 'number' && f.size > 5 * 1024 * 1024) continue;
-                  const base64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
-                    reader.onerror = (err) => reject(err);
-                    reader.readAsDataURL(f);
-                  });
-                  items.push({ fileBase64: base64, contentType: f.type || 'application/octet-stream', filename: f.name || 'upload' });
+              let contentToSend = postContent.trim();
+              let attachmentsUpload = undefined;
+              if (postType === 'ship' && buildFile) {
+                const apiBase = process.env.NEXT_PUBLIC_API_BASE || '';
+                const uploadResp = await uploadGameUtil({ file: buildFile, name: game?.name || 'game', token: uploadAuthToken, apiBase });
+                if (!uploadResp.ok) {
+                  setPostMessage(`Upload failed: ${uploadResp.error || 'Unknown error'}`);
+                  setIsPosting(false);
+                  return;
                 }
-                return items;
-              })();
+                const absolutePlayUrl = apiBase ? `${apiBase}${uploadResp.playUrl}` : uploadResp.playUrl;
+                var playLink = absolutePlayUrl;
+              }
+              // For moments, attach PNG (<=5MB) via Airtable content endpoint
+              if (postType === 'moment' && postFiles.length) {
+                const f = postFiles[0];
+                if (typeof f.size === 'number' && f.size > 5 * 1024 * 1024) {
+                  setPostMessage('PNG must be <= 5MB');
+                  setIsPosting(false);
+                  return;
+                }
+                const base64 = await new Promise((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+                  reader.onerror = (err) => reject(err);
+                  reader.readAsDataURL(f);
+                });
+                attachmentsUpload = [{ fileBase64: base64, contentType: 'image/png', filename: f.name || 'moment.png' }];
+              }
               const res = await fetch('/api/createPost', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, gameId: game.id, content: postContent.trim(), attachmentsUpload }),
+                body: JSON.stringify({ token, gameId: game.id, content: contentToSend, attachmentsUpload, playLink }),
               });
               const data = await res.json().catch(() => ({}));
               if (res.ok && data?.ok) {
                 setPostContent("");
+                setBuildFile(null);
                 setPostFiles([]);
                 setPostMessage('Posted!');
                 setTimeout(() => setPostMessage("") , 2000);
@@ -979,6 +1033,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                   postId: data.post?.PostID || undefined,
                   content: data.post?.content || '',
                   createdAt: data.post?.createdAt || new Date().toISOString(),
+                  PlayLink: typeof data.post?.PlayLink === 'string' ? data.post.PlayLink : '',
                   attachments: Array.isArray(data.post?.attachments) ? data.post.attachments : [],
                 };
                 onUpdated?.({ id: game.id, posts: [newPost, ...(Array.isArray(game.posts) ? game.posts : [])] });
@@ -1013,14 +1068,13 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                     <span style={{ fontSize: 11, opacity: 0.6 }}>{p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</span>
                   </div>
                 </div>
-                <div style={{ whiteSpace: 'pre-wrap' }}>{p.content}</div>
-                {Array.isArray(p.attachments) && p.attachments.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                    {p.attachments.map((att, attIdx) => (
-                      <img key={att.id || attIdx} src={att.url} alt={att.filename || ''} style={{ width: 120, height: 120, objectFit: 'cover', border: '1px solid #ddd', borderRadius: 8 }} />
-                    ))}
-                  </div>
-                )}
+                <div style={{ marginTop: 8 }}>
+                  {/* Enhanced renderer: embeds play component and shows attachments */}
+                  {(() => {
+                    const AttachmentRenderer = require('@/components/utils/PostAttachmentRenderer').default;
+                    return <AttachmentRenderer content={p.content} attachments={p.attachments} playLink={p.PlayLink} />;
+                  })()}
+                </div>
               </div>
             ))}
           </div>
@@ -1113,6 +1167,32 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
           padding: 8px;
           background: rgba(255,255,255,0.65);
           border-radius: 0 0 10px 10px;
+        }
+        .moment-type-toggle {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-right: 6px;
+          border: 1px solid rgba(0,0,0,0.18);
+          border-radius: 12px;
+          padding: 4px;
+          background: rgba(255,255,255,0.85);
+        }
+        .moment-type-option {
+          appearance: none;
+          border: 0;
+          background: rgba(255,255,255,0.75);
+          color: rgba(0,0,0,0.8);
+          border-radius: 9999px;
+          padding: 6px 10px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 12px;
+        }
+        .moment-type-option.active {
+          border: 0;
+          color: #fff;
+          background: linear-gradient(180deg, #ff8ec3 0%, #ff6fa5 100%);
         }
         .moments-footer-spacer { flex: 1; }
         .moments-attach-btn {

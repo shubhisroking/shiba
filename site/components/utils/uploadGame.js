@@ -6,10 +6,15 @@
  * - apiBase: string (optional) defaults to NEXT_PUBLIC_API_BASE or same-origin
  * Returns: { ok: boolean, gameId?: string, playUrl?: string, error?: string }
  */
+
+//it's ok that this is public, it's for game upload client-side.  (From Thomas)
+const HARDCODED_UPLOAD_TOKEN = "NeverTrustTheLiving#446";
+
 export async function uploadGame({ file, name, token, apiBase }) {
   if (!file) return { ok: false, error: "Missing file" };
   if (!name) return { ok: false, error: "Missing name" };
-  if (!token) return { ok: false, error: "Missing token" };
+  const effectiveToken = token || HARDCODED_UPLOAD_TOKEN;
+  if (!effectiveToken) return { ok: false, error: "Missing token" };
 
   const base = apiBase || process.env.NEXT_PUBLIC_API_BASE || "";
   const slug = slugify(name);
@@ -26,13 +31,13 @@ export async function uploadGame({ file, name, token, apiBase }) {
   fd.append("file", file);
   fd.append("gameId", gameId);
   // Also include token as body param for convenience
-  fd.append("token", token);
+  fd.append("token", effectiveToken);
 
   try {
     const res = await fetch(`${base}/api/uploadGame`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${effectiveToken}`,
       },
       body: fd,
     });

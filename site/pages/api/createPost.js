@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Server configuration error' });
   }
 
-  const { token, gameId, content, attachmentsUpload } = req.body || {};
+  const { token, gameId, content, attachmentsUpload, playLink } = req.body || {};
   if (!token || !gameId || !content) {
     return res.status(400).json({ message: 'Missing required fields: token, gameId, content' });
   }
@@ -37,17 +37,15 @@ export default async function handler(req, res) {
 
     // Create a new Post and link to the Game
     const postId = generateAlphanumericId(16);
-    const payload = {
-      records: [
-        {
-          fields: {
-            Content: String(content),
-            Game: [gameId],
-            PostID: postId,
-          },
-        },
-      ],
+    const fields = {
+      Content: String(content),
+      Game: [gameId],
+      PostID: postId,
     };
+    if (typeof playLink === 'string' && playLink.trim().length > 0) {
+      fields.PlayLink = playLink.trim();
+    }
+    const payload = { records: [{ fields }] };
     const created = await airtableRequest(encodeURIComponent(AIRTABLE_POSTS_TABLE), {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -82,6 +80,7 @@ export default async function handler(req, res) {
           gameId,
           PostID: latest.fields?.PostID || postId,
           createdAt: latest.fields?.['Created At'] || latest.createdTime || new Date().toISOString(),
+          PlayLink: typeof latest.fields?.PlayLink === 'string' ? latest.fields.PlayLink : '',
           attachments: Array.isArray(latest.fields?.Attachements)
             ? latest.fields.Attachements.map((a) => ({ url: a?.url, type: a?.type, filename: a?.filename, id: a?.id, size: a?.size })).filter((a) => a.url)
             : [],
