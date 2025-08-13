@@ -420,7 +420,7 @@ app.get('/webUploaderTest', (req, res) => {
       }
       statusEl.textContent = 'Upload complete!';
       statusEl.className = 'msg ok';
-      const playUrl = (data && data.playUrl) ? data.playUrl : (data && data.gameId ? '/play/' + encodeURIComponent(data.gameId) : '');
+      const playUrl = (data && data.playUrl) ? data.playUrl : (data && data.gameId ? '/play/' + encodeURIComponent(data.gameId) : '' + '/');
       if (playUrl) {
         const a = document.createElement('a');
         a.href = playUrl;
