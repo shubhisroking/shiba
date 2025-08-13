@@ -11,3 +11,9 @@ out/
 # Env
 .env
 .env.*
+
+./api/.env
+
+./api/uploads/
+
+./api/local-storage/
