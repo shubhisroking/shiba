@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 
 const PlayGameComponent = dynamic(() => import("@/components/utils/playGameComponent"), { ssr: false });
 
+//ok
 function GamePlayerNoSSR() {
   const params = new URLSearchParams(window.location.search);
   const gameId = params.get("gameId") || "";
