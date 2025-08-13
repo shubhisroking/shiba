@@ -152,7 +152,7 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
   // Preload SFX and game clip audios for instant playback
   const sfxFiles = ["next.mp3", "prev.mp3", "shiba-bark.mp3"];
   const clipFiles = games.map((g) => g.gameClipAudio).filter(Boolean);
-  const { play: playSound, playClip } = useAudioManager([...sfxFiles, ...clipFiles]);
+  const { play: playSound, playClip, stopAll } = useAudioManager([...sfxFiles, ...clipFiles]);
 
   // When selected game changes, play its clip immediately using the preloaded element
   useEffect(() => {
@@ -224,6 +224,7 @@ export default function HomeScreen({ games, setAppOpen, selectedGame, setSelecte
             onSelect={setSelectedGame}
             playSound={playSound}
             setAppOpen={setAppOpen}
+            stopAll={stopAll}
             selectedIndex={selectedGame}
           />
           <GameDetails game={games[selectedGame]} />
