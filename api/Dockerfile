@@ -15,10 +15,8 @@ COPY server.js ./
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
-# Create non-root user and set permissions
-RUN addgroup -g 1001 -S nodejs \
-  && adduser -S node -u 1001 \
-  && chown -R node:node /app
+# Use pre-existing non-root user in the Node image and set permissions
+RUN chown -R node:node /app
 USER node
 
 # Default port used by the app (overridable via PORT env)
