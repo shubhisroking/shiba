@@ -357,6 +357,90 @@ app.get('/', (req, res) => {
 	res.type('text/plain').send('Shiba API running');
 });
 
+// ================================
+// Simple Web Uploader: GET /webUploaderTest
+// ================================
+app.get('/webUploaderTest', (req, res) => {
+	res.setHeader('Cache-Control', 'no-store');
+	res.type('html').send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shiba Web Uploader Test</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; line-height: 1.5; }
+    .card { max-width: 640px; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input[type="text"], input[type="password"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    button { margin-top: 16px; padding: 10px 16px; font-size: 16px; cursor: pointer; }
+    .msg { margin-top: 12px; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .ok { color: #0a7b34; }
+    .err { color: #b00020; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Shiba Web Uploader Test</h1>
+    <p>Select your game zip, provide your upload token, and optionally a custom gameId.</p>
+    <form id="uploader" enctype="multipart/form-data">
+      <label>Zip file (.zip)
+        <input id="file" name="file" type="file" accept=".zip" required />
+      </label>
+      <label>Custom gameId (optional)
+        <input id="gameId" name="gameId" type="text" placeholder="e.g. my-cool-game" />
+      </label>
+      <label>Upload token (required)
+        <input id="token" name="token" type="password" placeholder="UPLOAD_AUTH_TOKEN" required />
+      </label>
+      <button type="submit">Upload</button>
+    </form>
+    <div id="status" class="msg"></div>
+    <div id="result" class="msg"></div>
+  </div>
+  <script>
+  const form = document.getElementById('uploader');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusEl.textContent = 'Uploading...';
+    statusEl.className = 'msg';
+    resultEl.textContent = '';
+    try {
+      const fd = new FormData(form);
+      const res = await fetch('/api/uploadGame', { method: 'POST', body: fd });
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch {}
+      if (!res.ok) {
+        statusEl.textContent = 'Upload failed: ' + (data && data.error ? data.error : text);
+        statusEl.className = 'msg err';
+        return;
+      }
+      statusEl.textContent = 'Upload complete!';
+      statusEl.className = 'msg ok';
+      const playUrl = (data && data.playUrl) ? data.playUrl : (data && data.gameId ? '/play/' + encodeURIComponent(data.gameId) : '');
+      if (playUrl) {
+        const a = document.createElement('a');
+        a.href = playUrl;
+        a.textContent = window.location.origin + playUrl;
+        a.target = '_blank';
+        resultEl.innerHTML = 'Play URL: ';
+        resultEl.appendChild(a);
+      } else {
+        resultEl.textContent = text;
+      }
+    } catch (err) {
+      statusEl.textContent = 'Upload error: ' + (err && err.message ? err.message : err);
+      statusEl.className = 'msg err';
+    }
+  });
+  </script>
+  </body>
+</html>`);
+});
+
 app.listen(PORT, () => {
 	console.log(`Server listening on http://localhost:${PORT}`);
 	// Kick off background sync on startup if R2 is configured
