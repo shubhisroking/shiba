@@ -123,6 +123,7 @@ export default function Home() {
         <div style={{ position: "relative", minHeight: "100vh" }}>
           {!disableTopBar && (
             <TopBar
+            backgroundColor={games[selectedGame].bgColor}
               title={games[selectedGame].name}
               image={games[selectedGame].image}
               onBack={() => setAppOpen("Home")}

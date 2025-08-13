@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import CreateGameModal from "@/components/CreateGameModal";
 import useAudioManager from "@/components/useAudioManager";
+import TopBar from "@/components/TopBar";
 
 
 function ShaderToyBackground() {
@@ -15,7 +16,7 @@ function ShaderToyBackground() {
 
     const vertexSource = `#version 300 es\nprecision highp float;\nvoid main(){\n  const vec2 verts[3] = vec2[3](vec2(-1.0,-1.0), vec2(3.0,-1.0), vec2(-1.0,3.0));\n  gl_Position = vec4(verts[gl_VertexID], 0.0, 1.0);\n}`;
 
-    const fragmentSource = `#version 300 es\nprecision highp float;\nout vec4 outColor;\nuniform vec3 iResolution;\nuniform float iTime;\n\n#define pi 3.145191\n#define wither 1.7825638\n#define mzkzoz 4.2396529\n#define euler 2.64\n#define res 1.24536783\n#define less 0.5\n\nconst int SHADER_TYPE_MOVING              = 0;\nconst int SHADER_TYPE_DISTORTION_GLITCH   = 1;\nconst int SHADER_TYPE_VERTICAL_LINEAR     = 2;\nconst int SHADER_TYPE_HORIZONTAL_LINEAR   = 3;\nconst int SHADER_TYPE_CENTER_LINEAR       = 4;\nconst int SHADER_TYPE_CURTAIN             = 5;\n\nconst int HUD_TYPE_BORDERS                 = 0;\nconst int HUD_TYPE_ROUNDED_BORDERS         = 1;\nconst int HUD_TYPE_CENTER_COLUMN           = 2;\nconst int HUD_TYPE_CRAZY_LINES             = 3;\nconst int HUD_TYPE_MAYBE_VERTICAL_DIRTY    = 4;\nconst int HUD_TYPE_MAYBE_VERTICAL          = 5;\nconst int HUD_TYPE_HALF                    = 6;\n\nconst int HUD_TYPE_DISTORTION_GLITCH_NORMAL        = 7;\nconst int HUD_TYPE_DISTORTION_GLITCH_EXTENDED      = 10;\nconst int HUD_TYPE_DISTORTION_GLITCH_FADE_IN       = 11;\nconst int HUD_TYPE_DISTORTION_GLITCH_FADE_IN_DIRTY = 12;\n\nconst int HUD_TYPE_CURTAIN_RED_HEATED      = 13;\nconst int HUD_TYPE_CURTAIN_GREEN_HEATED    = 14;\nconst int HUD_TYPE_CURTAIN_BLUE_HEATED     = 15;\nconst int HUD_TYPE_CURTAIN_MIXED           = 16;\nconst int HUD_TYPE_CURTAIN_GREEN_YELLOW    = 17;\nconst int HUD_TYPE_CURTAIN_YELLOW_GREEN    = 18;\nconst int HUD_TYPE_CURTAIN_BLUE_PINK       = 19;\nconst int HUD_TYPE_CURTAIN_WHITE_PINK      = 21;\n\nconst int shaderType = SHADER_TYPE_CURTAIN;\nconst int hudType = HUD_TYPE_CURTAIN_BLUE_PINK;\nconst int distortionGlitchType = HUD_TYPE_DISTORTION_GLITCH_NORMAL;\nconst bool shaderPaused = false;\nconst float shaderPausedValue = 12.32;\n\nconst float uFrequency = 1.0;\nconst float velocity = 100.0;\nconst float amount = 1.0;\nconst bool horizontalLines = false;\nconst bool coloredBorders = false;\n\nconst int amplitudeType     = 0;\nconst int WAS               = 0;\nconst int redPower          = 0;\nconst int greenPower        = 0;\nconst int bluePower         = 0;\n\nconst int amplitudeMultiplier   = 0;\nconst int WASMultiplier         = 0;\nconst int redMultiplier         = 0;\nconst int greenMultiplier       = 0;\nconst int blueMultiplier        = 0;\n\nconst float alpha               = 1.0;\n\nfloat hudMulti(float var) {\n    switch (hudType) {\n        case HUD_TYPE_ROUNDED_BORDERS:return sin(var * pi);\n        case HUD_TYPE_CENTER_COLUMN:return cos(var);\n        case HUD_TYPE_CRAZY_LINES:return tan(var);\n        case HUD_TYPE_MAYBE_VERTICAL_DIRTY:return sinh(var);\n        case HUD_TYPE_MAYBE_VERTICAL:return cosh(var);\n        case HUD_TYPE_HALF:return asin(var);\n    }\n    return sin(var);\n}\nfloat convertible(float var, int use){\n    switch (use) {\n        case 1:return sin(var);\n        case 2:return cos(var);\n        case 3:return tan(var);\n\n        case 4:return asin(var);\n        case 5:return acos(var);\n        case 6:return atan(var);\n\n        case 7:return sinh(var);\n        case 8:return cosh(var);\n        case 9:return tanh(var);\n\n        case 10:return asinh(var);\n        case 11:return acosh(var);\n        case 12:return atanh(var);\n    }\n    return var;\n}\nfloat multiply(int multi){switch (multi) {\n        case 1:return pi;\n        case 2:return wither;\n        case 3:return mzkzoz;\n        case 4:return euler;\n        case 5:return res;\n        case 6:return less;\n    }\n    return 1.0;\n}\nfloat hudGlitchType(float var) {\n    switch (distortionGlitchType) {\n        case HUD_TYPE_DISTORTION_GLITCH_EXTENDED:return tan(var);\n        case HUD_TYPE_DISTORTION_GLITCH_FADE_IN:return cos(var);\n        case HUD_TYPE_DISTORTION_GLITCH_FADE_IN_DIRTY:return asinh(var);\n    }\n    return var;\n}\n\nfloat colorF(float colorIn){\n   return abs(sin(pi * abs(colorIn * pi)) / sin(cos(wither) * euler));\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = fragCoord/iResolution.xy;\n    float r = 1.0;\n    float g = 1.0;\n    float b = 1.0;\n    if (shaderType == SHADER_TYPE_MOVING) {\n        float data = uv.x;\n        float yData = uv.y;\n        bool thing = coloredBorders;\n        if (horizontalLines == true) {\n            data = uv.y;\n            thing = !thing;\n        }\n        if (coloredBorders == true) {\n            yData = uv.x;\n        }\n        if (shaderPaused == true) {\n            r = abs(colorF(abs(colorF(yData) * (shaderPausedValue * velocity))));\n        } else {\n            r = abs(colorF(abs(colorF(yData) * (iTime * velocity))));\n        }\n        g = colorF(data);\n        b = mod(colorF(r * uFrequency) * convertible(mzkzoz * pi, WAS) * multiply(WASMultiplier),\n            sin(convertible(g * wither / euler, amplitudeType) * multiply(amplitudeMultiplier)));\n    } else if (shaderType == SHADER_TYPE_DISTORTION_GLITCH) {\n        float lines = 3.0;\n        float data = uv.x;\n        float notData = uv.y;\n        if (horizontalLines == false) {\n            data = uv.y;\n            notData = uv.x;\n        }\n        if (shaderPaused == true) {\n            r = abs(data * convertible(data * data * shaderPausedValue * data, redPower) * hudMulti(uFrequency));\n            g = colorF(data * convertible(shaderPausedValue * (velocity * hudGlitchType(wither)) * sin(mod(shaderPausedValue, notData)), greenPower));\n            b = abs(hudMulti(shaderPausedValue) * velocity * convertible(tanh(notData) * wither * euler * lines * sin(pi), bluePower));\n        } else {\n            r = abs(data * convertible(data * data * iTime * data, redPower) * hudMulti(uFrequency));\n            g = colorF(data * convertible(iTime * (velocity * hudGlitchType(wither)) * sin(mod(iTime, notData)), greenPower));\n            b = abs(hudMulti(iTime) * velocity * convertible(tanh(notData) * wither * euler * lines * sin(pi), bluePower));\n        }\n    } else if(shaderType == SHADER_TYPE_VERTICAL_LINEAR) {\n        if (shaderPaused == true) {\n            r = abs(shaderPausedValue * uv.x * (velocity * amount) * multiply(amplitudeMultiplier));\n        } else {\n            r = abs(iTime * uv.x * (velocity * amount) * multiply(amplitudeMultiplier));\n        }\n        g = sin((r));\n        b = cos(g);\n    } else if(shaderType == SHADER_TYPE_HORIZONTAL_LINEAR) {\n        if (shaderPaused == true) {\n            r = abs(shaderPausedValue * uv.y * (velocity * amount) * multiply(amplitudeMultiplier));\n        } else {\n            r = abs(iTime * uv.y * (velocity * amount) * multiply(amplitudeMultiplier));\n        }\n        g = sin((r));\n        b = cos(g);\n    } else if(shaderType == SHADER_TYPE_CENTER_LINEAR) {\n        if (shaderPaused == true) {\n            r = abs(shaderPausedValue * uv.x * uv.y * (velocity * amount) * multiply(amplitudeMultiplier));\n        } else {\n            r = abs(iTime * uv.x * uv.y * (velocity * amount) * multiply(amplitudeMultiplier));\n        }\n        g = sin((r));\n        b = cos(g);\n    } else if(shaderType == SHADER_TYPE_CURTAIN) {\n        switch(hudType) {\n            case HUD_TYPE_CURTAIN_GREEN_YELLOW:\n                if (horizontalLines) {\n                    if(shaderPaused) {\n                        r = mod(uv.y * shaderPausedValue, uv.x) * uFrequency;\n                    } else {\n                        r = mod(uv.y * iTime, uv.x) * uFrequency;\n                    }\n                } else {\n                    if(shaderPaused) {\n                        r = mod(uv.x * shaderPausedValue, uv.y) * uFrequency;\n                    } else {\n                        r = mod(uv.x * iTime, uv.y) * uFrequency;\n                    }\n                }\n                g = 0.0;\n                b = 1.0;\n            case HUD_TYPE_CURTAIN_YELLOW_GREEN:\n                if (horizontalLines) {\n                    if(shaderPaused) {\n                        r = mod(uv.y * shaderPausedValue, uv.x) * uFrequency;\n                    } else {\n                        r = mod(uv.y * iTime, uv.x) * uFrequency;\n                    }\n                } else {\n                    if(shaderPaused) {\n                        r = mod(uv.x * shaderPausedValue, uv.y) * uFrequency;\n                    } else {\n                        r = mod(uv.x * iTime, uv.y) * uFrequency;\n                    }\n                }\n                g = 0.0;\n                b = 0.0;\n            case HUD_TYPE_CURTAIN_BLUE_PINK:\n                if (horizontalLines) {\n                    if(shaderPaused) {\n                        r = mod(uv.y * shaderPausedValue, uv.x) * uFrequency;\n                    } else {\n                        r = mod(uv.y * iTime, uv.x) * uFrequency;\n                    }\n                } else {\n                    if(shaderPaused) {\n                        r = mod(uv.x * shaderPausedValue, uv.y) * uFrequency;\n                    } else {\n                        r = mod(uv.x * iTime, uv.y) * uFrequency;\n                    }\n                }\n                g = 1.0;\n                b = 1.0;\n            case HUD_TYPE_CURTAIN_WHITE_PINK:\n                if (horizontalLines) {\n                    if(shaderPaused) {\n                        g = mod(uv.y * shaderPausedValue, uv.x) * uFrequency;\n                    } else {\n                        g = mod(uv.y * iTime, uv.x) * uFrequency;\n                    }\n                } else {\n                    if(shaderPaused) {\n                        g = mod(uv.x * shaderPausedValue, uv.y) * uFrequency;\n                    } else {\n                        g = mod(uv.x * iTime, uv.y) * uFrequency;\n                    }\n                }\n                r = 1.0;\n                b = 1.0;\n        }\n    }\n    fragColor = vec4(\n        convertible(r, redPower)   * multiply(redMultiplier),\n        convertible(g, greenPower) * multiply(greenMultiplier),\n        convertible(b, bluePower)  * multiply(blueMultiplier),\n        alpha\n    );\n}\n\nvoid main(){\n  vec4 color;\n  mainImage(color, gl_FragCoord.xy);\n  outColor = color;\n}`;
+    const fragmentSource = `#version 300 es\nprecision highp float;\nout vec4 outColor;\nuniform vec3 iResolution;\nuniform float iTime;\n\n// Colors: top -> middle -> bottom\nconst vec3 TOP_COLOR = vec3(248.0, 216.0, 224.0) / 255.0;   // #F8D8E0\nconst vec3 MID_COLOR = vec3(207.0, 232.0, 255.0) / 255.0;   // pastel blue\nconst vec3 BOT_COLOR = vec3(255.0, 220.0, 195.0) / 255.0;   // pastel orange\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  float y = clamp(uv.y, 0.0, 1.0);\n\n  vec3 col;\n  if (y < 0.5) {\n    float t = smoothstep(0.0, 0.5, y);\n    col = mix(BOT_COLOR, MID_COLOR, t);\n  } else {\n    float t = smoothstep(0.5, 1.0, y);\n    col = mix(MID_COLOR, TOP_COLOR, t);\n  }\n\n  fragColor = vec4(col, 1.0);\n}\n\nvoid main(){\n  vec4 color;\n  mainImage(color, gl_FragCoord.xy);\n  outColor = color;\n}`;
 
     function compile(type, source) {
       const shader = gl.createShader(type);
@@ -99,10 +100,12 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
   const [createGamePopupOpen, setCreateGamePopupOpen] = useState(false);
   const [hoverIndex, setHoverIndex] = useState(null);
   const [visibleItemsCount, setVisibleItemsCount] = useState(0);
-  const { play: playSound } = useAudioManager(["popSound.mp3", "loadingSound.mp3"]);
+  const { play: playSound } = useAudioManager(["popSound.mp3", "loadingSound.mp3", "next.mp3", "prev.mp3"]);
   const gridRef = useRef(null);
   const [gridStep, setGridStep] = useState({ x: 256, y: 256 });
   const [gridOffset, setGridOffset] = useState({ left: 16, top: 0 });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const itemsRefs = useRef([]);
 
   const [mySelectedGameId, setMySelectedGameId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,7 +133,6 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
       }
       try {
         setIsLoading(true);
-        let loadStart = Date.now();
         playSound("loadingSound.mp3");
         const res = await fetch("/api/GetMyGames", {
           method: "POST",
@@ -153,11 +155,6 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
         console.error(e);
         // swallow for now
       } finally {
-        const elapsed = typeof loadStart === 'number' ? (Date.now() - loadStart) : 0;
-        const remaining = Math.max(0, 2000 - elapsed);
-        if (remaining > 0) {
-          await new Promise((r) => setTimeout(r, remaining));
-        }
         if (isMounted) setIsLoading(false);
       }
     };
@@ -173,9 +170,9 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
     let cancelled = false;
     const timeouts = [];
     setVisibleItemsCount(0);
-    const initialDelayMs = 1000; // wait 1s before first pop
-    const gapMs = 500; // 500ms between items
-    playSound("popSound.mp3");
+    const initialDelayMs = 500; // faster start
+    const gapMs = 250; // 2x faster between items
+    // playSound("popSound.mp3");
 
     for (let i = 0; i < total; i++) {
 
@@ -195,6 +192,62 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
   useEffect(() => {
     setGridStep({ x: 240, y: 240 });
   }, []);
+
+  // Reset/Clamp keyboard cursor when list changes or when leaving/entering list view
+  useEffect(() => {
+    if (mySelectedGameId) return; // only list view
+    const total = (Array.isArray(myGames) ? myGames.length : 0) + 1; // include "+"
+    if (selectedIndex >= total) {
+      setSelectedIndex(Math.max(0, total - 1));
+    } else if (total > 0 && selectedIndex < 0) {
+      setSelectedIndex(0);
+    } else if (total > 0 && selectedIndex === 0 && total === 1) {
+      setSelectedIndex(0);
+    }
+  }, [myGames, mySelectedGameId, selectedIndex]);
+
+  // Keyboard navigation for list view
+  useEffect(() => {
+    if (mySelectedGameId) return; // only in list view
+    if (createGamePopupOpen) return; // pause when modal open
+
+    const handleKeyDown = (e) => {
+      const total = (Array.isArray(myGames) ? myGames.length : 0) + 1; // include plus
+      if (total <= 0) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        try { playSound('next.mp3'); } catch (_) {}
+        const next = (selectedIndex + 1) % total;
+        setSelectedIndex(next);
+        // scroll into view
+        const node = itemsRefs.current[next];
+        if (node && typeof node.scrollIntoView === 'function') {
+          node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        try { playSound('prev.mp3'); } catch (_) {}
+        const prev = (selectedIndex - 1 + total) % total;
+        setSelectedIndex(prev);
+        const node = itemsRefs.current[prev];
+        if (node && typeof node.scrollIntoView === 'function') {
+          node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedIndex < myGames.length) {
+          const item = myGames[selectedIndex];
+          if (item && item.id) setMySelectedGameId(item.id);
+        } else {
+          setCreateGamePopupOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mySelectedGameId, createGamePopupOpen, myGames, selectedIndex]);
 
   const refresh = async () => {
     if (!token) return;
@@ -231,7 +284,7 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
     return (
       <div style={{ width: '100vw', display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center", height: '100vh', maxWidth: '100vw', margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
         <ShaderToyBackground />
-        <p style={{ position: 'relative', zIndex: 1 }}>Loading...</p>
+        <p style={{ position: 'relative', opacity: 0.2, zIndex: 1 }}>Loading...</p>
       </div>
     );
   }
@@ -243,15 +296,26 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
             const selected = myGames.find((x) => x.id === mySelectedGameId);
             if (!selected) return null;
             return (
-              <DetailView
-                game={selected}
-                onBack={() => setMySelectedGameId(null)}
-                token={token}
-                onUpdated={(updated) => {
-                  setMyGames((prev) => prev.map((g) => (g.id === updated.id ? { ...g, ...updated } : g)));
-                }}
-                SlackId={SlackId}
-              />
+              <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+                <ShaderToyBackground />
+                <TopBar
+                  backgroundColor="rgba(255, 214, 224, 1)"
+                  title={selected.name || 'Edit Game'}
+                  image="MyGames.png"
+                  onBack={() => setMySelectedGameId(null)}
+                />
+                <div style={{ paddingTop: 64, position: 'relative', zIndex: 1 }}>
+                  <DetailView
+                    game={selected}
+                    onBack={() => setMySelectedGameId(null)}
+                    token={token}
+                    onUpdated={(updated) => {
+                      setMyGames((prev) => prev.map((g) => (g.id === updated.id ? { ...g, ...updated } : g)));
+                    }}
+                    SlackId={SlackId}
+                  />
+                </div>
+              </div>
             );
           })()
         : (
@@ -284,14 +348,20 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
                 const title = g.name || 'Untitled';
                 const hasImage = Boolean(g.thumbnailUrl);
                 return (
-                  <div key={g.id || `${title}-${idx}`} className={`pop-seq-item${visibleItemsCount > idx ? ' visible' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div
+                    key={g.id || `${title}-${idx}`}
+                    className={`pop-seq-item${visibleItemsCount > idx ? ' visible' : ''}`}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+                    ref={(el) => { itemsRefs.current[idx] = el; }}
+                    onMouseEnter={() => setSelectedIndex(idx)}
+                  >
                     <div
                       style={{
                         position: 'relative',
                         width: '240px',
                         aspectRatio: '1 / 1',
-                        background: '#fff',
-                        border: '1px solid #000',
+                        background: 'rgba(255, 255, 255, 0.3)',
+                        border: selectedIndex === idx ? '2px solid rgba(0, 0, 0, 0.8)' : '1px solid rgba(0, 0, 0, 0.3)',
                         borderRadius: 4,
                         overflow: 'hidden',
                         display: 'flex',
@@ -346,14 +416,20 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
                   </div>
                 );
               })}
-              <div key="create-new" className={`pop-seq-item${visibleItemsCount > myGames.length ? ' visible' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div
+                key="create-new"
+                className={`pop-seq-item${visibleItemsCount > myGames.length ? ' visible' : ''}`}
+                style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+                ref={(el) => { itemsRefs.current[myGames.length] = el; }}
+                onMouseEnter={() => setSelectedIndex(myGames.length)}
+              >
                 <div
                   style={{
                     position: 'relative',
                     width: '100%',
                     aspectRatio: '1 / 1',
-                    background: '#fff',
-                    border: '1px solid #000',
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    border: selectedIndex === myGames.length ? '2px solid rgba(0, 0, 0, 0.8)' : '1px solid rgba(0, 0, 0, 0.3)',
                     borderRadius: 4,
                     overflow: 'hidden',
                     display: 'flex',
@@ -378,7 +454,7 @@ export default function MyGamesComponent({ disableTopBar, setDisableTopBar, goHo
               }
               .pop-seq-item.visible {
                 visibility: visible;
-                animation: popIn 1000ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                animation: popIn 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
               }
               @keyframes popIn {
                 0% { transform: scale(0); opacity: 0; }
@@ -424,6 +500,12 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
   const [isPosting, setIsPosting] = useState(false);
   const [postMessage, setPostMessage] = useState("");
   const [postFiles, setPostFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [slackProfile, setSlackProfile] = useState(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
+  const totalAttachmentBytes = useMemo(() => (postFiles || []).reduce((sum, f) => sum + (typeof f.size === 'number' ? f.size : 0), 0), [postFiles]);
+  const overTotalLimit = totalAttachmentBytes > MAX_TOTAL_BYTES;
 
   useEffect(() => {
     setName(game?.name || "");
@@ -452,6 +534,26 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
       }
     };
     fetchProjects();
+  }, [SlackId]);
+
+  // Fetch Slack displayName and image via cachet
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSlack = async () => {
+      if (!SlackId) return;
+      try {
+        const res = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(SlackId)}`);
+        const json = await res.json().catch(() => ({}));
+        if (!cancelled && json && (json.displayName || json.image)) {
+          setSlackProfile({ displayName: json.displayName || '', image: json.image || '' });
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
+    };
+    fetchSlack();
+    return () => { cancelled = true; };
   }, [SlackId]);
 
   // Close picker when clicking outside of the input/picker container
@@ -486,6 +588,19 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [thumbnailFile, thumbnailUrl]);
+
+  const hasChanges = useMemo(() => {
+    const initialName = game?.name || "";
+    const initialDescription = game?.description || "";
+    const initialGitHub = game?.GitHubURL || "";
+    const initialProjects = game?.HackatimeProjects || "";
+    const nameChanged = (name || "") !== initialName;
+    const descriptionChanged = (description || "") !== initialDescription;
+    const gitChanged = (GitHubURL || "") !== initialGitHub;
+    const projectsChanged = (selectedProjectsCsv || "") !== initialProjects;
+    const thumbnailChanged = Boolean(thumbnailFile);
+    return nameChanged || descriptionChanged || gitChanged || projectsChanged || thumbnailChanged;
+  }, [game?.name, game?.description, game?.GitHubURL, game?.HackatimeProjects, name, description, GitHubURL, selectedProjectsCsv, thumbnailFile]);
 
   const handleUpdate = async () => {
     if (!token || !game?.id) return;
@@ -543,147 +658,290 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
   return (
     <div style={{ marginTop: 16, display: 'flex', flexDirection: 'row', gap: 16 }}>
       {/* Left column: existing form */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ fontWeight: 600, marginBottom: 8 }}>Edit Game</p>
-          <button onClick={onBack}>Back</button>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8, padding: 16, minHeight: '100vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+          <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('thumbnail-file-input')?.click(); } }}
+            onClick={() => { document.getElementById('thumbnail-file-input')?.click(); }}
+            title="Select Image"
+            aria-label="Select Image"
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: 8,
+              border: '1px solid #ccc',
+              background: 'rgba(255,255,255,0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            {previewUrl ? (
+              <img src={previewUrl} alt="thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span style={{ fontSize: 12, opacity: 0.8 }}>Select Image</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+            <input className="nice-input" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Game Name" />
+            <textarea className="nice-textarea" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Game Description" />
+          </div>
         </div>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Game Name" />
-        <input
-          type="text"
-          value={GitHubURL}
-          onChange={(e) => setGitHubURL(e.target.value)}
-          placeholder="GitHub Link (https://github.com/{user}/{project})"
-          onBlur={() => {
-            const pattern = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
-            if (GitHubURL && !pattern.test(GitHubURL)) {
-              alert('Please use format: https://github.com/{user}/{project}');
-            }
-          }}
-        />
-        <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Game Description" />
-        {/* Hackatime projects input with inline dropdown multi-select */}
-        <label style={{ fontWeight: 500 }}>Hackatime Projects</label>
-        <div ref={projectPickerContainerRef} style={{ position: 'relative', width: 400, maxWidth: 400 }}>
+        <div style={{ fontSize: 12, color: '#000', opacity: 0.9, marginTop: 6, lineHeight: 1.4 }}>
+          Do these 3 quick steps: 1) join the
+          {' '}
+          <a
+            href="https://slack.hackclub.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#ff6fa5', fontWeight: 700, textDecoration: 'none' }}
+          >
+            Hack Club Slack
+          </a>
+          , 2) log in to
+          {' '}
+          <a
+            href="https://hackatime.hackclub.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#ff6fa5', fontWeight: 700, textDecoration: 'none' }}
+          >
+            Hackatime
+          </a>
+          {' '}with Slack, 3) install the
+          {' '}
+          <a
+            href="http://godotengine.org/asset-library/asset/3484"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#ff6fa5', fontWeight: 700, textDecoration: 'none' }}
+          >
+            Godot extension
+          </a>
+          {' '}to track time and earn playtest tickets.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
           <input
+            className="nice-input"
             type="text"
-            value={selectedProjectsCsv}
-            readOnly
-            placeholder="Select projects"
-            style={{ width: '100%', maxWidth: 400, paddingRight: 36 }}
-            onClick={() => setShowProjectPicker((s) => !s)}
+            value={GitHubURL}
+            onChange={(e) => setGitHubURL(e.target.value)}
+            placeholder="GitHub Link (https://github.com/{user}/{project})"
+            onBlur={() => {
+              const pattern = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+              if (GitHubURL && !pattern.test(GitHubURL)) {
+                alert('Please use format: https://github.com/{user}/{project}');
+              }
+            }}
+            style={{ flex: 1 }}
           />
-          {showProjectPicker && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                zIndex: 10,
-                border: '1px solid #ddd',
-                borderRadius: 4,
-                padding: 8,
-                background: '#fff',
-                maxHeight: 260,
-                overflow: 'auto',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.28)'
-              }}
-            >
-              {availableProjects.length === 0 && (
-                <div style={{ opacity: 0.6 }}>No projects found</div>
-              )}
-              {availableProjects.map((name, index) => {
-                const current = Array.from(new Set(selectedProjectsCsv.split(',').map((s) => s.trim()).filter(Boolean)));
-                const checked = current.includes(name);
-                return (
-                  <div
-                    key={name}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '6px 8px',
-                      cursor: 'pointer',
-                      borderTop: index === 0 ? 'none' : '1px solid #eee',
-                    }}
-                    onClick={(e) => {
-                      // make entire row toggle
-                      const set = new Set(current);
-                      if (checked) set.delete(name); else set.add(name);
-                      setSelectedProjectsCsv(Array.from(set).join(', '));
-                    }}
-                    role="checkbox"
-                    aria-checked={checked}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault();
+          {/* Hackatime projects input with inline dropdown multi-select */}
+          <div ref={projectPickerContainerRef} style={{ position: 'relative', flex: 1 }}>
+            <input
+              className="nice-input"
+              type="text"
+              value={selectedProjectsCsv}
+              readOnly
+              placeholder="Hackatime Projects"
+              style={{ width: '100%', paddingRight: 36 }}
+              onClick={() => setShowProjectPicker((s) => !s)}
+            />
+            {showProjectPicker && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  width: '100%',
+                  zIndex: 10,
+                  border: '1px solid #ddd',
+                  borderRadius: 4,
+                  padding: 8,
+                  background: '#fff',
+                  maxHeight: 260,
+                  overflow: 'auto',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.28)'
+                }}
+              >
+                {availableProjects.length === 0 && (
+                  <div style={{ opacity: 0.6 }}>No projects found</div>
+                )}
+                {availableProjects.map((name, index) => {
+                  const current = Array.from(new Set(selectedProjectsCsv.split(',').map((s) => s.trim()).filter(Boolean)));
+                  const checked = current.includes(name);
+                  return (
+                    <div
+                      key={name}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 8px',
+                        cursor: 'pointer',
+                        borderTop: index === 0 ? 'none' : '1px solid #eee',
+                      }}
+                      onClick={(e) => {
+                        // make entire row toggle
                         const set = new Set(current);
                         if (checked) set.delete(name); else set.add(name);
                         setSelectedProjectsCsv(Array.from(set).join(', '));
-                      }
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      readOnly
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    <span style={{ fontSize: 12, color: '#333' }}>{name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      }}
+                      role="checkbox"
+                      aria-checked={checked}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          const set = new Set(current);
+                          if (checked) set.delete(name); else set.add(name);
+                          setSelectedProjectsCsv(Array.from(set).join(', '));
+                        }
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        readOnly
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <span style={{ fontSize: 12, color: '#333' }}>{name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-        {/* Thumbnail upload */}
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt="thumbnail"
-            style={{ width: 160, height: 160, objectFit: 'cover', border: '1px solid #ccc', cursor: 'pointer' }}
-            onClick={() => {
-              const input = document.getElementById('thumbnail-file-input');
-              if (input) input.click();
-            }}
-          />
-        ) : null}
         <input
           id="thumbnail-file-input"
           type="file"
           accept="image/*"
+          style={{ display: 'none' }}
           onChange={(e) => {
             const file = e.target.files?.[0] || null;
             setThumbnailFile(file);
           }}
         />
-        <button disabled={saving} onClick={handleUpdate}>{saving ? 'Updating...' : 'Update'}</button>
+        {(hasChanges || saving) && (
+          <button disabled={saving} onClick={handleUpdate} className="big-cta-btn">{saving ? 'Updating...' : 'Update'}</button>
+        )}
       </div>
-      <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #ccc', paddingLeft: 16 }}>
-        <p>Shiba Moments</p>
-      <div style={{ marginTop: 16 }}>
-        <textarea
-          style={{ width: '100%', minHeight: 100, resize: 'vertical', fontSize: 14, padding: 8, boxSizing: 'border-box' }}
-          placeholder="Write your update here..."
-          value={postContent}
-          onChange={(e) => setPostContent(e.target.value)}
-        />
-        <input
-          type="file"
-          accept="image/*,image/gif"
-          multiple
-          style={{ marginTop: 8 }}
-          onChange={(e) => {
-            const files = Array.from(e.target.files || []);
-            setPostFiles(files);
-          }}
-        />
-        <button
-          style={{ marginTop: 8 }}
-          disabled={isPosting || !postContent.trim()}
-          onClick={async () => {
+      <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #ccc', padding: 16, minHeight: '100vh' }}>
+        <p style={{ fontWeight: "bold"}}>Shiba Moments & Releases</p> 
+
+        <br/>
+        <p style={{ fontSize: 12, opacity: 0.7 }}>Every 3–4 hours: post a Shiba Moment. Add a short note of what you added and a screenshot/GIF/video.</p>
+        <br/>
+        <p  style={{ fontSize: 12, opacity: 0.7 }}>Every ~10 hours: ship a new release. We’ll try it, award play tickets based on your time, and send it to other hack clubbers in the community to playtest.</p>
+        <div style={{ marginTop: 16 }}>
+              <div
+                className={`moments-composer${isDragActive ? ' drag-active' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDragEnter={(e) => { e.preventDefault(); setIsDragActive(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDragActive(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragActive(false);
+                  const incoming = Array.from(e.dataTransfer?.files || []).filter((f) => {
+                    const t = (f.type || '').toLowerCase();
+                    return t.startsWith('image/') || t.startsWith('video/');
+                  });
+                  if (incoming.length === 0) return;
+                  setPostFiles((prev) => {
+                    const byKey = new Map();
+                    const addAll = (arr) => {
+                      for (const f of arr) {
+                        const key = `${f.name}|${f.size}|${f.lastModified}`;
+                        if (!byKey.has(key)) byKey.set(key, f);
+                      }
+                    };
+                    addAll(prev || []);
+                    addAll(incoming);
+                    return Array.from(byKey.values());
+                  });
+                }}
+              >
+            <textarea
+              className="moments-textarea"
+                  placeholder="Write what you added here..."
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+            />
+            {/* Previews */}
+            {Array.isArray(postFiles) && postFiles.length > 0 && (
+              <div className="moments-previews">
+                {postFiles.map((file, idx) => {
+                  const url = URL.createObjectURL(file);
+                  const type = (file.type || '').split('/')[0];
+                  return (
+                    <div key={`${file.name}-${file.size}-${file.lastModified}`} className="moments-preview-item">
+                      {type === 'video' ? (
+                        <video src={url} className="moments-preview-media" muted playsInline />
+                      ) : (
+                        <img src={url} alt={file.name || ''} className="moments-preview-media" />
+                      )}
+                      <button
+                        type="button"
+                        className="moments-remove-btn"
+                        title="Remove"
+                        onClick={() => {
+                          setPostFiles((prev) => prev.filter((_, i) => i !== idx));
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="moments-footer">
+              <input
+                id="moments-file-input"
+                type="file"
+                 accept="image/*,video/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const incoming = Array.from(e.target.files || []);
+                  if (incoming.length === 0) return;
+                  setPostFiles((prev) => {
+                    const byKey = new Map();
+                    const addAll = (arr) => {
+                      for (const f of arr) {
+                        const key = `${f.name}|${f.size}|${f.lastModified}`;
+                        if (!byKey.has(key)) byKey.set(key, f);
+                      }
+                    };
+                    addAll(prev || []);
+                    addAll(incoming);
+                    const merged = Array.from(byKey.values());
+                    const total = merged.reduce((sum, f) => sum + (f.size || 0), 0);
+
+                    return merged;
+                  });
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                className="moments-attach-btn"
+                onClick={() => document.getElementById('moments-file-input')?.click()}
+              >
+                Add screenshots{postFiles.length ? ` (${postFiles.length})` : ''}
+              </button>
+              <div className="moments-footer-spacer" />
+              <button
+                className="moments-post-btn"
+                disabled={isPosting || !postContent.trim() || overTotalLimit}
+                onClick={async () => {
             if (!token || !game?.id || !postContent.trim()) return;
             setIsPosting(true);
             setPostMessage("");
@@ -735,22 +993,31 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
               setIsPosting(false);
             }
           }}
-        >
-          {isPosting ? 'Posting…' : 'Post'}
-        </button>
+              >
+                {isPosting ? 'Posting…' : overTotalLimit ? 'Screenshots exceed 5MB' : 'Post'}
+              </button>
+            </div>
+          </div>
+        {overTotalLimit ? (
+          <p style={{ marginTop: 8, color: '#b00020' }}>Total screenshots must be under 5MB. Try removing some files or using smaller ones.</p>
+        ) : null}
         {postMessage ? <p style={{ marginTop: 8, opacity: 0.7 }}>{postMessage}</p> : null}
         {Array.isArray(game.posts) && game.posts.length > 0 && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {game.posts.map((p, pIdx) => (
-              <div key={p.id || pIdx} style={{ paddingTop: 8, marginTop: 8, borderTop: '1px solid #eee' }}>
-                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
-                  {p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}
+              <div key={p.id || pIdx} className="moment-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div className="slack-avatar" style={{ backgroundImage: slackProfile?.image ? `url(${slackProfile.image})` : 'none' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>{slackProfile?.displayName || 'User'}</span>
+                    <span style={{ fontSize: 11, opacity: 0.6 }}>{p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</span>
+                  </div>
                 </div>
                 <div style={{ whiteSpace: 'pre-wrap' }}>{p.content}</div>
                 {Array.isArray(p.attachments) && p.attachments.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
                     {p.attachments.map((att, attIdx) => (
-                      <img key={att.id || attIdx} src={att.url} alt={att.filename || ''} style={{ width: 88, height: 88, objectFit: 'cover', border: '1px solid #ddd' }} />
+                      <img key={att.id || attIdx} src={att.url} alt={att.filename || ''} style={{ width: 120, height: 120, objectFit: 'cover', border: '1px solid #ddd', borderRadius: 8 }} />
                     ))}
                   </div>
                 )}
@@ -760,6 +1027,155 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
         )}
       </div>
       </div>
+      <style jsx>{`
+        .moments-composer {
+          border: 1px solid rgba(0,0,0,0.18);
+          border-radius: 10px;
+          overflow: hidden;
+          background: rgba(255,255,255,0.75);
+          transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+        }
+        .moments-composer.drag-active {
+          border-color: rgba(0,0,0,0.35);
+          box-shadow: 0 0 0 3px rgba(255, 111, 165, 0.25);
+          background: rgba(255,255,255,0.85);
+        }
+        .moment-card {
+          border: 1px solid rgba(0,0,0,0.18);
+          border-radius: 10px;
+          background: rgba(255,255,255,0.8);
+          padding: 12px;
+        }
+        .slack-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          border: 1px solid rgba(0,0,0,0.18);
+          background-size: cover;
+          background-position: center;
+          background-color: #fff;
+        }
+        .moments-previews {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 8px;
+          background: rgba(255,255,255,0.65);
+          border-bottom: 1px solid rgba(0,0,0,0.12);
+        }
+        .moments-preview-item {
+          position: relative;
+          width: 88px;
+          height: 88px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          overflow: hidden;
+          background: rgba(255,255,255,0.85);
+        }
+        .moments-preview-media {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .moments-remove-btn {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 18px;
+          height: 18px;
+          line-height: 18px;
+          border-radius: 9999px;
+          border: 1px solid rgba(0,0,0,0.18);
+          background: rgba(255,255,255,0.9);
+          color: rgba(0,0,0,0.8);
+          cursor: pointer;
+          font-size: 12px;
+          padding: 0;
+        }
+        .moments-textarea {
+          width: 100%;
+          min-height: 120px;
+          resize: vertical;
+          font-size: 14px;
+          box-sizing: border-box;
+          padding: 10px;
+          outline: none;
+          border: 0;
+          border-bottom: 1px solid rgba(0,0,0,0.12);
+          border-radius: 10px 10px 0 0;
+          background: transparent;
+        }
+        .moments-footer {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px;
+          background: rgba(255,255,255,0.65);
+          border-radius: 0 0 10px 10px;
+        }
+        .moments-footer-spacer { flex: 1; }
+        .moments-attach-btn {
+          appearance: none;
+          border: 1px solid rgba(0,0,0,0.18);
+          background: rgba(255,255,255,0.75);
+          color: rgba(0,0,0,0.8);
+          border-radius: 8px;
+          padding: 8px 10px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 12px;
+        }
+        .moments-post-btn {
+          appearance: none;
+          border: 0;
+          background: linear-gradient(180deg, #ff8ec3 0%, #ff6fa5 100%);
+          color: #fff;
+          border-radius: 10px;
+          padding: 10px 14px;
+          cursor: pointer;
+          font-weight: 800;
+          font-size: 13px;
+        }
+        .nice-input {
+          padding: 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(0,0,0,0.18);
+          background: rgba(255,255,255,0.75);
+          outline: none;
+        }
+        .nice-textarea {
+          padding: 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(0,0,0,0.18);
+          background: rgba(255,255,255,0.75);
+          outline: none;
+        }
+        .big-cta-btn {
+          appearance: none;
+          width: 100%;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 0;
+          cursor: pointer;
+          color: #fff;
+          font-weight: 800;
+          font-size: 16px;
+          letter-spacing: 0.2px;
+          background: linear-gradient(180deg, #ff8ec3 0%, #ff6fa5 100%);
+          transform: translateY(0);
+          transition: transform 120ms ease, opacity 120ms ease;
+        }
+        .big-cta-btn:hover { transform: translateY(-1px); }
+        .big-cta-btn:active { transform: translateY(1px); }
+        .big-cta-btn:disabled {
+          opacity: 0.8;
+          cursor: not-allowed;
+          transform: none;
+          color: rgba(255,255,255,0.9);
+          background: linear-gradient(180deg, rgba(219, 37, 112, 0.45) 0%, rgba(176, 22, 89, 0.45) 100%);
+        }
+      `}</style>
     </div>
   );
 }
