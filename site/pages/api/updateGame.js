@@ -113,6 +113,14 @@ export default async function handler(req, res) {
   }
 }
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '5mb',
+    },
+  },
+};
+
 function escapeFormulaString(value) {
   return String(value).replace(/"/g, '\\"');
 }
