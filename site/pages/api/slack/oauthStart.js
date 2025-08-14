@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   // Use Slack OpenID Connect for Sign in with Slack (no bot install required)
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    scope: 'identity',
+    scope: 'openid profile email',
     redirect_uri: redirectUri,
     response_type: 'code',
     state,
