@@ -9,7 +9,7 @@ import TopBar from "@/components/TopBar";
 
 export default function Home() {
   
-  const SlackId = "U041FQB8VK2";
+  const SlackId = null;
 
   const games = [
     {
@@ -45,6 +45,7 @@ export default function Home() {
 
 
   const [token, setToken] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   const [appOpen, setAppOpen] = useState("Home");
   const [selectedGame, setSelectedGame] = useState(0);
@@ -61,6 +62,30 @@ export default function Home() {
       setToken(storedToken);
     }
   }, []);
+
+  // Fetch profile when token is available
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProfile = async () => {
+      if (!token) { setProfile(null); return; }
+      try {
+        const res = await fetch('/api/getMyProfile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (isMounted && res.ok && data?.ok) {
+          setProfile(data.profile || null);
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
+    };
+    fetchProfile();
+    return () => { isMounted = false; };
+  }, [token]);
 
   const requestOtp = async (email) => {
     try {
@@ -106,6 +131,10 @@ export default function Home() {
           setAppOpen={setAppOpen}
           selectedGame={selectedGame}
           setSelectedGame={setSelectedGame}
+          SlackId={profile?.slackId || null}
+          token={token}
+          profile={profile}
+          setProfile={setProfile}
         />
       );
     }

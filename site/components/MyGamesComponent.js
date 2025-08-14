@@ -841,7 +841,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
         <br/>
         <p style={{ fontSize: 12, opacity: 0.7 }}>Every 3–4 hours: post a Shiba Moment. Add a short note of what you added and a screenshot/GIF/video.</p>
         <br/>
-        <p  style={{ fontSize: 12, opacity: 0.7 }}>Every ~10 hours: ship a new release. We’ll try it, award play tickets based on your time, and send it to other hack clubbers in the community to playtest.</p>
+        <p  style={{ fontSize: 12, opacity: 0.7 }}>Every ~10 hours: ship a new demo. We’ll try it, award play tickets based on your time, and send it to other hack clubbers in the community to playtest.</p>
         <div style={{ marginTop: 16 }}>
               <div
                 className={`moments-composer${isDragActive ? ' drag-active' : ''}`}
@@ -949,7 +949,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                     className="moments-attach-btn"
                     onClick={() => document.getElementById('moments-file-input')?.click()}
                   >
-                    {postFiles.length ? `Selected: ${postFiles[0].name}` : 'Upload PNG (Moment)'}
+                    {postFiles.length ? `Selected: ${postFiles[0].name}` : 'Upload PNG/mp4/gif'}
                   </button>
                 </>
               )}
@@ -970,7 +970,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                   aria-selected={postType === 'ship'}
                   onClick={() => setPostType('ship')}
                 >
-                  Ship
+                  Demo
                 </button>
               </div>
               <button
@@ -1069,10 +1069,9 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                   </div>
                 </div>
                 <div style={{ marginTop: 8 }}>
-                  {/* Enhanced renderer: embeds play component and shows attachments */}
                   {(() => {
                     const AttachmentRenderer = require('@/components/utils/PostAttachmentRenderer').default;
-                    return <AttachmentRenderer content={p.content} attachments={p.attachments} playLink={p.PlayLink} />;
+                    return <AttachmentRenderer content={p.content} attachments={p.attachments} playLink={p.PlayLink} gameName={game?.name || ''} thumbnailUrl={game?.thumbnailUrl || ''} />;
                   })()}
                 </div>
               </div>
