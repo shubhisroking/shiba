@@ -1,6 +1,10 @@
 const CLIENT_ID = process.env.SLACK_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.SLACK_CLIENT_SECRET || '';
 const REDIRECT_BASE = process.env.NEXT_PUBLIC_BASE_URL || '';
+const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || 'appg245A41MWc6Rej';
+const AIRTABLE_USERS_TABLE = process.env.AIRTABLE_USERS_TABLE || 'Users';
+const AIRTABLE_API_BASE = 'https://api.airtable.com/v0';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -31,16 +35,17 @@ export default async function handler(req, res) {
     const userInfo = await userInfoRes.json();
     const slackUserId = userInfo && (userInfo['https://slack.com/user_id'] || userInfo.sub || '');
 
-    // If we have a token captured in state (from opener), update user immediately
+    // If we have a token captured in state (from opener), update user immediately in Airtable
     const userToken = typeof state === 'string' ? state : '';
-    if (userToken && slackUserId) {
-      const baseUrl = REDIRECT_BASE || `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`;
+    if (userToken && slackUserId && AIRTABLE_API_KEY) {
       try {
-        await fetch(`${baseUrl}/api/updateMySlackId`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: userToken, slackId: slackUserId }),
-        });
+        const user = await findUserByToken(userToken);
+        if (user && user.id) {
+          await airtableRequest(`${encodeURIComponent(AIRTABLE_USERS_TABLE)}/${encodeURIComponent(user.id)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ fields: { 'slack id': String(slackUserId) } }),
+          });
+        }
       } catch (_) {}
     }
 
@@ -49,6 +54,39 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).send('OAuth error');
   }
+}
+
+function escapeFormulaString(value) {
+  return String(value).replace(/"/g, '\\"');
+}
+
+async function airtableRequest(path, options = {}) {
+  const url = `${AIRTABLE_API_BASE}/${AIRTABLE_BASE_ID}/${path}`;
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  if (!response.ok) {
+    const _ = await response.text().catch(() => '');
+    throw new Error('airtable update failed');
+  }
+  return response.json();
+}
+
+async function findUserByToken(token) {
+  const tokenEscaped = escapeFormulaString(token);
+  const params = new URLSearchParams({
+    filterByFormula: `{token} = "${tokenEscaped}"`,
+    pageSize: '1',
+  });
+  const data = await airtableRequest(`${encodeURIComponent(AIRTABLE_USERS_TABLE)}?${params.toString()}`, {
+    method: 'GET',
+  });
+  return (data.records && data.records[0]) || null;
 }
 
 
