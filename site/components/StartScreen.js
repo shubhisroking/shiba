@@ -78,7 +78,6 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         minHeight: "100vh",
         position: "relative",
         backgroundImage: "url('/landing/background.png')",
-        backgroundSize: "contain",
         backgroundPosition: "top",
         backgroundRepeat: "no-repeat",
         
@@ -320,6 +319,10 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         height: 100%;
         font-size: 1.2em;
       }
+
+      .opening {
+      background-size: contain;
+      }
       
       .opening-info {
         display: flex;
@@ -403,6 +406,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
       border-radius: 12px;
       padding: 10px;
       width: inherit;
+      cursor: pointer;
       }
 
       .email-input button:hover {
@@ -768,6 +772,10 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           min-height: 100vh;
         }
 
+        .opening {
+          background-size: cover;
+        }
+
         .top-text.japanese {
           font-size: 0.9em;
           text-align: center;
@@ -832,15 +840,37 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           align-items: center;
         }
 
+        .info-1-games {
+          display: flex;
+          flex-flow: row;
+          justify-content: center;
+          gap: 8px;
+          align-items: stretch;
+          padding-bottom: 150px;
+        }
+
         .game-item {
           position: relative;
-          width: 80%;
+          width: 30%;
           top: auto;
           left: auto;
+          top: 0 !important;
+          left: 0 !important;
+        }
+
+        .game-item p {
+        font-size: 0.8em;
+        padding: 0;
+        }
+        
+        .taiko-divider > img {
+        width: 200%;
+        margin-top: -50%;
+        margin-bottom: -25%;
         }
 
         .jumpy {
-          top: 8vw;
+          top: -10vw;
           gap: 2%;
           padding: 0 5%;
         }
@@ -855,13 +885,13 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         }
 
         .info-2 .content {
-          padding-top: 6vw;
+          padding-top: 30vw;
           margin-top: -12vw;
           padding-bottom: 15vw;
           margin-bottom: -12vw;
           padding-left: 20px;
-          align-items: center;
-          text-align: center;
+          align-items: flex-end;
+          text-align: right;
         }
 
         .firetext {
@@ -872,14 +902,6 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           font-size: 1.5em;
         }
 
-        .firetext.flipped {
-          transform: none;
-        }
-
-        .firetext.flipped p {
-          transform: none;
-          text-align: center;
-        }
 
         .arcade-divider {
           width: 100%;
