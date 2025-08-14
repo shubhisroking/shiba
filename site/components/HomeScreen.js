@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import AppHead from "@/components/AppHead";
 import GameCarousel from "@/components/GameCarousel";
 import GameDetails from "@/components/GameDetails";
@@ -143,46 +143,414 @@ export function MovingBackground() {
   );
 }
 
-export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }) {
-  const games = [
-    {
-      name: "My Games",
-      description: "Create, update, and ship your games",
-      image: "MyGames.png",
-      bgColor: "rgba(255, 214, 224, 1)",
-      gameClipAudio: "MyGames.mp3",
-    },
-    {
-      name: "Global Games",
-      description: "View global activity & playtest games",
-      image: "Play.png",
-      bgColor: "rgba(214, 245, 255, 1)",
-      gameClipAudio: "Global.mp3"
+function ProfileModal({ isOpen, onClose, slackProfile, onLogout, initialProfile, token, onUpdated }) {
+  const [shouldRender, setShouldRender] = useState(Boolean(isOpen));
+  const [isExiting, setIsExiting] = useState(false);
+  const [githubUsername, setGithubUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [street1, setStreet1] = useState("");
+  const [street2, setStreet2] = useState("");
+  const [city, setCity] = useState("");
+  const [zipcode, setZipcode] = useState("");
+  const [country, setCountry] = useState("");
+  const [saving, setSaving] = useState(false);
 
-    },
-    {
-      name: "Shop",
-      description: "Purchase items from the shop.",
-      image: "Shop.png",
-      bgColor: "rgba(214, 255, 214, 1)",
-      gameClipAudio: "Shop.mp3",
-    },
-    {
-      name: "Help",
-      description: "Learn how to use Shiba.",
-      image: "Help.png",
-      bgColor: "rgba(255, 245, 214, 1)",
-      gameClipAudio: "Help.mp3",
-    },
-  ];
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      requestAnimationFrame(() => setIsExiting(false));
+    } else if (shouldRender) {
+      setIsExiting(true);
+      const t = setTimeout(() => {
+        setShouldRender(false);
+        setIsExiting(false);
+      }, 260);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, shouldRender]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const p = initialProfile || {};
+    setGithubUsername(p.githubUsername || "");
+    setFirstName(p.firstName || "");
+    setLastName(p.lastName || "");
+    setBirthday(p.birthday || "");
+    setStreet1((p.address && p.address.street1) || "");
+    setStreet2((p.address && p.address.street2) || "");
+    setCity((p.address && p.address.city) || "");
+    setZipcode((p.address && p.address.zipcode) || "");
+    setCountry((p.address && p.address.country) || "");
+    setSaving(false);
+  }, [isOpen, initialProfile]);
+
+  const hasChanges = useMemo(() => {
+    return Boolean(
+      githubUsername || firstName || lastName || birthday || street1 || street2 || city || zipcode || country
+    );
+  }, [githubUsername, firstName, lastName, birthday, street1, street2, city, zipcode, country]);
+
+  if (!shouldRender) return null;
+
+  const displayName = slackProfile?.displayName || "";
+  const image = slackProfile?.image || "";
+
+  return (
+    <div
+      className={`modal-overlay ${isExiting ? "exit" : "enter"}`}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10000,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div
+        className={`modal-card ${isExiting ? "exit" : "enter"}`}
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.92)",
+          padding: 20,
+          borderRadius: 12,
+          minWidth: 320,
+          maxWidth: 420,
+          width: "90%",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          border: "1px solid rgba(0, 0, 0, 0.12)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 600 }}>Profile</p>
+          <button
+            onClick={onClose}
+            className="icon-btn"
+            aria-label="Close"
+            title="Close"
+            style={{
+              appearance: "none",
+              border: "1px solid rgba(0,0,0,0.12)",
+              background: "rgba(255,255,255,0.7)",
+              width: 32,
+              height: 32,
+              borderRadius: 9999,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "rgba(0,0,0,0.65)",
+              fontSize: 18,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", textAlign: "center" }}>
+          {initialProfile?.slackId ? (
+            <>
+              <div style={{
+                width: 88,
+                height: 88,
+                borderRadius: 12,
+                border: "1px solid rgba(0,0,0,0.18)",
+                overflow: "hidden",
+                backgroundColor: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                {image ? (
+                  <img src={image} alt={displayName || "Slack Avatar"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ fontSize: 12, opacity: 0.6 }}>No Avatar</div>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontWeight: 700 }}>{displayName || ""}</span>
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Signed in via Slack</span>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const base = window.location.origin;
+                const w = window.open(`${base}/api/slack/oauthStart?state=${encodeURIComponent(token || '')}` , 'slack_oauth', 'width=600,height=700');
+                const listener = async (evt) => {
+                  if (!evt || !evt.data || evt.data.type !== 'SLACK_CONNECTED') return;
+                  try {
+                    const id = String(evt.data.slackId || '');
+                    if (!id) return;
+                    // Re-fetch profile to get canonical state from server
+                    try {
+                      const res = await fetch('/api/getMyProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+                      const data = await res.json().catch(() => ({}));
+                      if (res.ok && data?.ok) {
+                        onUpdated?.(data.profile);
+                      } else {
+                        onUpdated?.({ ...(initialProfile || {}), slackId: id });
+                      }
+                    } catch (_) {
+                      onUpdated?.({ ...(initialProfile || {}), slackId: id });
+                    }
+                  } catch (_) {}
+                  window.removeEventListener('message', listener);
+                  try { w && w.close && w.close(); } catch (_) {}
+                };
+                window.addEventListener('message', listener);
+              }}
+              style={{
+                appearance: 'none',
+                border: 0,
+                background: 'linear-gradient(180deg, #ff8ec3 0%, #ff6fa5 100%)',
+                color: '#fff',
+                borderRadius: 10,
+                padding: '10px 14px',
+                cursor: 'pointer',
+                fontWeight: 800,
+              }}
+            >
+              Connect to Slack
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+          <span style={{ fontSize: 12, opacity: 0.7 }}>GitHub</span>
+          <input
+            type="text"
+            placeholder="GitHub Username"
+            value={githubUsername}
+            onChange={(e) => setGithubUsername(e.target.value)}
+            style={{ padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+          />
+          <span style={{ fontSize: 12, opacity: 0.7 }}>Name</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="text"
+              placeholder="First Name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+            />
+            <input
+              type="text"
+              placeholder="Last Name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+            />
+          </div>
+          <span style={{ fontSize: 12, opacity: 0.7 }}>Birthday</span>
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            placeholder="YYYY-MM-DD"
+            style={{ padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+            <span style={{ fontSize: 12, opacity: 0.7 }}>Address</span>
+            <input
+              type="text"
+              placeholder="Street Address"
+              value={street1}
+              onChange={(e) => setStreet1(e.target.value)}
+              style={{ padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+            />
+            <input
+              type="text"
+              placeholder="Street Address #2"
+              value={street2}
+              onChange={(e) => setStreet2(e.target.value)}
+              style={{ padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="text"
+                placeholder="City"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                style={{ flex: 1, padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+              />
+              <input
+                type="text"
+                placeholder="Zipcode"
+                value={zipcode}
+                onChange={(e) => setZipcode(e.target.value)}
+                style={{ width: 140, padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              style={{ padding: 10, borderRadius: 10, border: "1px solid rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.8)", outline: "none" }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          {(hasChanges || saving) && (
+            <button
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  const payload = {
+                    githubUsername,
+                    firstName,
+                    lastName,
+                    birthday,
+                    address: { street1, street2, city, zipcode, country },
+                  };
+                  const res = await fetch('/api/updateMyProfile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, profile: payload }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (res.ok && data?.ok && data?.profile) {
+                    onUpdated?.(data.profile);
+                  }
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              style={{
+                appearance: "none",
+                border: 0,
+                background: "linear-gradient(180deg, #ff8ec3 0%, #ff6fa5 100%)",
+                color: "#fff",
+                borderRadius: 10,
+                padding: "10px 14px",
+                cursor: saving ? "not-allowed" : "pointer",
+                fontWeight: 800,
+                flex: 1,
+                opacity: saving ? 0.8 : 1,
+              }}
+            >
+              {saving ? "Updating..." : "Update"}
+            </button>
+          )}
+          <button
+            onClick={onLogout}
+            className="logout-btn"
+            style={{
+              appearance: "none",
+              border: "1px solid rgba(0,0,0,0.18)",
+              background: "rgba(0,0,0,0.06)",
+              color: "rgba(0,0,0,0.75)",
+              borderRadius: 10,
+              padding: "10px 14px",
+              cursor: "pointer",
+              fontWeight: 700,
+              flex: 1,
+            }}
+          >
+            Logout
+          </button>
+        </div>
+
+        
+      </div>
+      <style jsx>{`
+        .modal-overlay {
+          background-color: rgba(255, 255, 255, 0);
+          backdrop-filter: blur(0px);
+          -webkit-backdrop-filter: blur(0px);
+          transition: backdrop-filter 240ms ease, -webkit-backdrop-filter 240ms ease, background-color 240ms ease;
+        }
+        .modal-overlay.enter {
+          background-color: rgba(255, 255, 255, 0.3);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+        }
+        .modal-overlay.exit {
+          background-color: rgba(255, 255, 255, 0);
+          backdrop-filter: blur(0px);
+          -webkit-backdrop-filter: blur(0px);
+        }
+        .modal-card {
+          transform: translateY(6px) scale(0.98);
+          opacity: 0;
+          transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 220ms ease;
+        }
+        .modal-card.enter { transform: translateY(0) scale(1); opacity: 1; }
+        .modal-card.exit { transform: translateY(6px) scale(0.98); opacity: 0; }
+        .big-cta-btn {
+          appearance: none;
+          width: 100%;
+          padding: 14px 16px;
+          border-radius: 14px;
+          border: 0;
+          cursor: pointer;
+          color: #fff;
+          font-weight: 800;
+          font-size: 16px;
+          letter-spacing: 0.2px;
+          background: linear-gradient(180deg, #ff8ec3 0%, #ff6fa5 100%);
+          transform: translateY(0);
+          transition: transform 120ms ease, opacity 120ms ease;
+        }
+        .big-cta-btn:hover { transform: translateY(-1px); }
+        .big-cta-btn:active { transform: translateY(1px); }
+        .big-cta-btn:disabled {
+          opacity: 0.8;
+          cursor: not-allowed;
+          transform: none;
+          color: rgba(255,255,255,0.9);
+          background: linear-gradient(180deg, rgba(219, 37, 112, 0.45) 0%, rgba(176, 22, 89, 0.45) 100%);
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export default function HomeScreen({ games, setAppOpen, selectedGame, setSelectedGame, SlackId, token, profile, setProfile }) {
+
 
   // selectedGame is now controlled by the parent (index.js)
   const [tokyoTime, setTokyoTime] = useState("");
+  const [slackProfile, setSlackProfile] = useState({ displayName: "", image: "" });
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Preload SFX and game clip audios for instant playback
   const sfxFiles = ["next.mp3", "prev.mp3", "shiba-bark.mp3"];
   const clipFiles = games.map((g) => g.gameClipAudio).filter(Boolean);
-  const { play: playSound, playClip } = useAudioManager([...sfxFiles, ...clipFiles]);
+  const { play: playSound, playClip, stopAll } = useAudioManager([...sfxFiles, ...clipFiles]);
 
   // When selected game changes, play its clip immediately using the preloaded element
   useEffect(() => {
@@ -209,6 +577,25 @@ export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }
     return () => clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSlack = async () => {
+      if (!SlackId) return;
+      try {
+        const res = await fetch(`https://cachet.dunkirk.sh/users/${encodeURIComponent(SlackId)}`);
+        const json = await res.json().catch(() => ({}));
+        if (!cancelled && json && (json.displayName || json.image)) {
+          setSlackProfile({ displayName: json.displayName || "", image: json.image || "" });
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
+    };
+    fetchSlack();
+    return () => { cancelled = true; };
+  }, [SlackId]);
+
   return (
     <>
       <AppHead title="Shiba" />
@@ -234,16 +621,26 @@ export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }
           paddingLeft: 24,
           paddingRight: 24
         }}>
-          <div style={{
+          <div onClick={() => setIsProfileOpen(true)} style={{
             display: "flex",
             height: 32,
             width: 32,
             aspectRatio: 1,
-
             backgroundColor: "white",
-            border: "1px solid black",
-            borderRadius: 2
+            border: "1px solid rgba(0, 0, 0, 0.3)",
+            overflow: "hidden",
+            alignItems: "center",
+            borderRadius: 8,
+            justifyContent: "center",
+            cursor: "pointer"
           }}>
+            {slackProfile.image ? (
+              <img
+                src={slackProfile.image}
+                alt={slackProfile.displayName || "Slack Avatar"}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : null}
           </div>
           <p style={{ fontFamily: "GT Maru", fontWeight: "bold" }}>Shiba Arcade</p>
           <p style={{ margin: 0 }}>{tokyoTime}</p>
@@ -254,6 +651,7 @@ export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }
             onSelect={setSelectedGame}
             playSound={playSound}
             setAppOpen={setAppOpen}
+            stopAll={stopAll}
             selectedIndex={selectedGame}
           />
           <GameDetails game={games[selectedGame]} />
@@ -334,6 +732,20 @@ export default function HomeScreen({ setAppOpen, selectedGame, setSelectedGame }
 
         </div>
       </main>
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        slackProfile={slackProfile}
+        initialProfile={profile}
+        token={token}
+        onLogout={() => {
+          try {
+            localStorage.removeItem("token");
+          } catch (e) {}
+          window.location.reload();
+        }}
+        onUpdated={(p) => setProfile?.(p)}
+      />
     </>
   );
 }

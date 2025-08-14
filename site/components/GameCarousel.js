@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import GameCard from "@/components/GameCard";
 
-export default function GameCarousel({ games, onSelect, playSound, playClip, setAppOpen, selectedIndex: controlledIndex }) {
+export default function GameCarousel({ games, onSelect, playSound, playClip, setAppOpen, stopAll, selectedIndex: controlledIndex }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const numGames = games?.length ?? 0;
 
@@ -28,6 +28,8 @@ export default function GameCarousel({ games, onSelect, playSound, playClip, set
         event.preventDefault();
         const activeName = games?.[selectedIndex]?.name;
         if (activeName) {
+          // Stop any currently playing audio (SFX or clip) before opening
+          try { stopAll?.(); } catch (_) {}
           setAppOpen?.(activeName);
         }
       }
@@ -114,10 +116,11 @@ export default function GameCarousel({ games, onSelect, playSound, playClip, set
                     tabIndex={isActive ? 0 : -1}
                     aria-label={isActive ? `Open ${game.name}` : undefined}
                     aria-disabled={!isActive}
-                    onClick={isActive ? () => setAppOpen?.(game.name) : undefined}
+                    onClick={isActive ? () => { try { stopAll?.(); } catch (_) {} setAppOpen?.(game.name); } : undefined}
                     onKeyDown={isActive ? (e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
+                        try { stopAll?.(); } catch (_) {}
                         setAppOpen?.(game.name);
                       }
                     } : undefined}

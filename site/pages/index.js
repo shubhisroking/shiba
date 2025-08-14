@@ -5,12 +5,54 @@ import MyGamesComponent from "@/components/MyGamesComponent";
 import GlobalGamesComponent from "@/components/GlobalGamesComponent";
 import ShopComponent from "@/components/ShopComponent";
 import HelpComponent from "@/components/HelpComponent";
+import TopBar from "@/components/TopBar";
 
 export default function Home() {
+  
+
+  const games = [
+    {
+      name: "My Games",
+      description: "Create, update, and ship your games",
+      image: "MyGames.png",
+      bgColor: "rgba(255, 214, 224, 1)",
+      gameClipAudio: "MyGames.mp3",
+    },
+    {
+      name: "Global Games",
+      description: "View global activity & playtest games",
+      image: "Play.png",
+      bgColor: "rgba(214, 245, 255, 1)",
+      gameClipAudio: "Global.mp3"
+
+    },
+    {
+      name: "Shop",
+      description: "Purchase items from the shop.",
+      image: "Shop.png",
+      bgColor: "rgba(214, 255, 214, 1)",
+      gameClipAudio: "Shop.mp3",
+    },
+    {
+      name: "Help",
+      description: "Learn how to use Shiba.",
+      image: "Help.png",
+      bgColor: "rgba(255, 245, 214, 1)",
+      gameClipAudio: "Help.mp3",
+    },
+  ];
+
+
   const [token, setToken] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   const [appOpen, setAppOpen] = useState("Home");
   const [selectedGame, setSelectedGame] = useState(0);
+  const [disableTopBar, setDisableTopBar] = useState(false);
+
+  const goHome = () => {
+    setAppOpen("Home");
+  };
 
 
   useEffect(() => {
@@ -19,6 +61,30 @@ export default function Home() {
       setToken(storedToken);
     }
   }, []);
+
+  // Fetch profile when token is available
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProfile = async () => {
+      if (!token) { setProfile(null); return; }
+      try {
+        const res = await fetch('/api/getMyProfile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (isMounted && res.ok && data?.ok) {
+          setProfile(data.profile || null);
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(e);
+      }
+    };
+    fetchProfile();
+    return () => { isMounted = false; };
+  }, [token]);
 
   const requestOtp = async (email) => {
     try {
@@ -59,27 +125,47 @@ export default function Home() {
     if (appOpen === "Home") {
       return (
         <HomeScreen
+          games={games}
           appOpen={appOpen}
           setAppOpen={setAppOpen}
           selectedGame={selectedGame}
           setSelectedGame={setSelectedGame}
+          SlackId={profile?.slackId || null}
+          token={token}
+          profile={profile}
+          setProfile={setProfile}
         />
       );
     }
 
-    const components = {
-      "My Games": <MyGamesComponent />,
-      "Global Games": <GlobalGamesComponent />,
-      "Shop": <ShopComponent />,
-      "Help": <HelpComponent />,
+    const componentsMap = {
+      "My Games": MyGamesComponent,
+      "Global Games": GlobalGamesComponent,
+      "Shop": ShopComponent,
+      "Help": HelpComponent,
     };
 
-    const SelectedComponent = components[appOpen];
+    const SelectedComponent = componentsMap[appOpen];
     if (SelectedComponent) {
       return (
-        <div>
-          <button onClick={() => setAppOpen("Home")}>home</button>
-          {SelectedComponent}
+        <div style={{ position: "relative", minHeight: "100vh" }}>
+          {!disableTopBar && (
+            <TopBar
+            backgroundColor={games[selectedGame].bgColor}
+              title={games[selectedGame].name}
+              image={games[selectedGame].image}
+              onBack={() => setAppOpen("Home")}
+            />
+          )}
+          <div style={{ paddingTop: disableTopBar ? 0 : 64 }}>
+            <SelectedComponent
+              disableTopBar={disableTopBar}
+              setDisableTopBar={setDisableTopBar}
+              goHome={goHome}
+              token={token}
+              SlackId={profile?.slackId || null}
+            />
+          </div>
         </div>
       );
     }
