@@ -140,13 +140,11 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
             <div className="info-screen-overlay"></div>
           </div>
 
-        
-
           <div className="content">
             <div className="firetext online"><p>online!</p></div>
             <h1>MAKE A GAME<br/>for 2 months</h1>
             <p>create a game in godot, then get feedback on your game to improve it. earn SSS based on the feedback — then use SSS to buy a ticket to tokyo!</p>
-
+        
 
           </div>
 
