@@ -82,7 +82,14 @@ export default async function handler(req, res) {
           createdAt: latest.fields?.['Created At'] || latest.createdTime || new Date().toISOString(),
           PlayLink: typeof latest.fields?.PlayLink === 'string' ? latest.fields.PlayLink : '',
           attachments: Array.isArray(latest.fields?.Attachements)
-            ? latest.fields.Attachements.map((a) => ({ url: a?.url, type: a?.type, filename: a?.filename, id: a?.id, size: a?.size })).filter((a) => a.url)
+            ? latest.fields.Attachements.map((a) => ({ 
+                url: a?.url, 
+                type: a?.type, 
+                contentType: a?.type, // Add contentType for compatibility
+                filename: a?.filename, 
+                id: a?.id, 
+                size: a?.size 
+              })).filter((a) => a.url)
             : [],
         }
       : null;
