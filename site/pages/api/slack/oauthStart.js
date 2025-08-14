@@ -11,7 +11,15 @@ export default async function handler(req, res) {
   }
   const state = encodeURIComponent(String(req.query.state || ''));
   const redirectUri = `${REDIRECT_BASE}/api/slack/oauthCallback`;
-  const url = `https://slack.com/oauth/v2/authorize?client_id=${encodeURIComponent(CLIENT_ID)}&scope=users:read&user_scope=identity.basic&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+  // Use Slack OpenID Connect for Sign in with Slack (no bot install required)
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    scope: 'identity',
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    state,
+  });
+  const url = `https://slack.com/openid/connect/authorize?${params.toString()}`;
   res.redirect(url);
 }
 

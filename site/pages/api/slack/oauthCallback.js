@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       return res.status(400).send('Slack OAuth not configured');
     }
     const redirectUri = `${REDIRECT_BASE}/api/slack/oauthCallback`;
-    const tokenRes = await fetch('https://slack.com/api/oauth.v2.access', {
+    const tokenRes = await fetch('https://slack.com/api/openid.connect.token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code, redirect_uri: redirectUri }),
@@ -22,7 +22,14 @@ export default async function handler(req, res) {
     if (!tokenJson.ok) {
       return res.status(400).send('Slack OAuth failed');
     }
-    const slackUserId = tokenJson.authed_user && tokenJson.authed_user.id;
+    const idToken = tokenJson.id_token;
+    // Optionally fetch userinfo for profile and sub (user id)
+    const userInfoRes = await fetch('https://slack.com/api/openid.connect.userInfo', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const userInfo = await userInfoRes.json();
+    const slackUserId = userInfo && (userInfo['https://slack.com/user_id'] || userInfo.sub || '');
     // Pass slackUserId back to app via simple HTML to postMessage the id then close
     return res.send(`<!doctype html><html><body><script>window.opener && window.opener.postMessage({ type: 'SLACK_CONNECTED', slackId: '${slackUserId || ''}' }, '*'); window.close();</script></body></html>`);
   } catch (e) {
