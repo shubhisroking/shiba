@@ -4,7 +4,7 @@ import GameCarousel from "@/components/GameCarousel";
 import GameDetails from "@/components/GameDetails";
 import useAudioManager from "@/components/useAudioManager";
 
-function MovingBackground() {
+export function MovingBackground() {
   const ICON_SIZE = 64;
   const GAP = 32;
   const SPEED_PX_PER_SECOND = 20; // Adjust to control animation speed

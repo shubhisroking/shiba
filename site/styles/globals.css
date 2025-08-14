@@ -105,6 +105,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --yellow: #FFC03C;
+  --purple: #FF00EA;
+  --red: #FF2200;
+      
 }
 
 @media (prefers-color-scheme: dark) {
