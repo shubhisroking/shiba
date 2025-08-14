@@ -116,6 +116,7 @@ function normalizeProfileFields(f) {
     firstName: typeof f['First Name'] === 'string' ? f['First Name'] : '',
     lastName: typeof f['Last Name'] === 'string' ? f['Last Name'] : '',
     birthday: typeof f['birthday'] === 'string' ? f['birthday'] : '',
+    slackId: typeof f['slack id'] === 'string' ? f['slack id'] : '',
     address: {
       street1: typeof f['street address'] === 'string' ? f['street address'] : '',
       street2: typeof f['street address #2'] === 'string' ? f['street address #2'] : '',
