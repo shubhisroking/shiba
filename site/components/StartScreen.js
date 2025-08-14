@@ -74,6 +74,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
 
       <div className="opening" style={{
         width: "100vw",
+        height: "100%",
         minHeight: "100vh",
         position: "relative",
         backgroundImage: "url('/landing/background.png')",
@@ -95,7 +96,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
             zIndex: 2,
           }} />
 
-        <iframe className="opening-video"  src="https://www.youtube.com/embed/ehH_52fzStw?si=FMBsR4wvCLBPr02p" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <iframe className="opening-video"  src="https://www.youtube.com/embed/ehH_52fzSt?si=FMBsR4wvCLBPr02p" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
           
         
         
@@ -140,12 +141,44 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
             <div className="info-screen-overlay"></div>
           </div>
 
+        
+
           <div className="content">
             <div className="firetext online"><p>online!</p></div>
             <h1>MAKE A GAME<br/>for 2 months</h1>
-            <p>godot and stuff. godot and stuff.godot and stuff. godot and stuff.godot and stuff. godot and stuff.godot and stuff. godot and stuff.godot and stuff. godot and stuff.</p>
+            <p>create a game in godot, then get feedback on your game to improve it. earn SSS based on the feedback — then use SSS to buy a ticket to tokyo!</p>
+
 
           </div>
+
+          <div className="info-1-games">
+              <a className="game-item" href="https://maxwell-mph.itch.io/driftmetal" style={{
+                top: "0px",
+                left: "-12%"
+              }}> 
+                <p>drift metal (max, 16)</p>
+                <img src="/landing/game_driftmetal.png" />
+              </a>
+
+              <a className="game-item" href="https://firn.itch.io/train-game" style={{
+                top: "50px",
+                left: "15%",
+
+              }}> 
+                <p>do you like trains? (isidore, 16)</p>
+                <img src="/landing/game_trains.png" />
+              </a>
+
+              <a className="game-item" href="https://nanomars.itch.io/clicker-game" style={{
+                top: "180px",
+                left: "4%",
+              }}> 
+                <p>debug clicker (armand, 17)</p>
+                <img src="/landing/game_debugclicker.png" />
+              </a>
+
+            </div>
+
 
 
         </div>
@@ -196,9 +229,8 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
 
           <div className="content">
             <div className="firetext flipped inperson"><p>in-person!</p></div>
-            <h1>build an arcade<br/>IN TOKYO JAPAN</h1>
-            <p>godot and stuff. godot and stuff.godot and stuff. godot and stuff.godot and stuff. godot and stuff.godot and stuff. godot and stuff.godot and stuff. godot and stuff.</p>
-
+            <h1>BUILD AN ARCADE<br/>in tokyo japan</h1>
+            <p>use SSS you earned to win a ticket to japan. fly to tokyo and build an arcade with us, fully paid-for. put your game into the arcade and let the public try it!</p>
           </div>
 
 
@@ -295,7 +327,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         align-items: center;
         justify-content: center;
         width: 100%;
-        height: 100vh;
+        minHeight: 100vh;
         padding: 20px;
       }
 
@@ -445,7 +477,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
 
       .info-screen .content {
       position: relative;
-      z-index: 10;
+      z-index: 1;
       width: 100%;
       height: fit-content;
       padding: 64px;
@@ -456,6 +488,49 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           padding-bottom: 12.5vw;
         margin-bottom: -19.5vw;
         padding-right: 35%;
+      }
+
+
+      .info-1-games {
+        position: absolute;
+        z-index: 1;
+        right: -20%;
+        top: 0;
+        width: 55%;
+      }
+
+      .game-item {
+        width: 40%;
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 10px;
+        color: black;
+        font-size: 0.8em;
+
+        background: linear-gradient(to bottom, white, var(--yellow));
+        border: 4px solid black;
+        border-radius: 16px;
+        padding: 8px;
+
+        position: absolute;
+
+      }
+
+      .game-item:hover {
+      background: var(--yellow);
+      }
+
+      .game-item p {
+      color: black;
+      padding: 0;
+      }
+
+      .game-item img {
+      width: 100%;
+      border-radius: 8px;
       }
 
       .taiko-divider {
@@ -685,6 +760,162 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
       font-weight: bold;
       
       }
+
+
+      @media (max-width: 600px) {
+        .opening-info {
+          padding: 10px;
+          min-height: 100vh;
+        }
+
+        .top-text.japanese {
+          font-size: 0.9em;
+          text-align: center;
+        }
+
+        .top-text.english {
+          font-size: 0.9em;
+          text-align: center;
+        }
+
+        .opening-video {
+          width: 90%;
+          margin-top: -20px;
+        }
+
+        .email-input {
+          width: 85%;
+          padding: 12px;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .email-input input {
+          text-align: center;
+        }
+
+        .email-input button {
+          width: 100%;
+        }
+
+        .info h1 {
+          font-size: 2.5em;
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+
+        .info p {
+          font-size: 1em;
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+
+        .info-screen .content {
+          padding: 32px 20px;
+        }
+
+        .info-1 .content {
+          padding-bottom: 8vw;
+          margin-bottom: -12vw;
+          padding-right: 20px;
+        }
+
+        .info-1-games {
+          position: relative;
+          right: auto;
+          top: auto;
+          width: 100%;
+          margin-top: 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          align-items: center;
+        }
+
+        .game-item {
+          position: relative;
+          width: 80%;
+          top: auto;
+          left: auto;
+        }
+
+        .jumpy {
+          top: 8vw;
+          gap: 2%;
+          padding: 0 5%;
+        }
+
+        .jumpy-item {
+          font-size: 0.8em;
+        }
+
+        .jumpy p {
+          font-size: 1.5em;
+          margin-top: -30px;
+        }
+
+        .info-2 .content {
+          padding-top: 6vw;
+          margin-top: -12vw;
+          padding-bottom: 15vw;
+          margin-bottom: -12vw;
+          padding-left: 20px;
+          align-items: center;
+          text-align: center;
+        }
+
+        .firetext {
+          border-image-width: 15px 40% 15px 15px;
+          border-image-outset: 0px 50px 0px 0px;
+          padding: 15px;
+          padding-right: 40px;
+          font-size: 1.5em;
+        }
+
+        .firetext.flipped {
+          transform: none;
+        }
+
+        .firetext.flipped p {
+          transform: none;
+          text-align: center;
+        }
+
+        .arcade-divider {
+          width: 100%;
+          margin-left: 0;
+        }
+
+        .signup {
+          padding: 120px 20px 160px;
+        }
+
+        .faq-area {
+          padding-bottom: 40px;
+        }
+
+        .faq {
+          margin: 0 5%;
+          padding: 16px;
+        }
+
+        .shiba-direct {
+          padding: 12px;
+        }
+
+        .shiba-direct img {
+          width: 90%;
+        }
+
+        .faq details {
+          padding: 15px;
+        }
+
+        .faq summary {
+          font-size: 1em;
+        }
+      }
+      
 
       `}</style>
     </div>
