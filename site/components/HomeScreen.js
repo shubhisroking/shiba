@@ -306,17 +306,12 @@ function ProfileModal({ isOpen, onClose, slackProfile, onLogout, initialProfile,
               type="button"
               onClick={() => {
                 const base = window.location.origin;
-                const w = window.open(`${base}/api/slack/oauthStart`, 'slack_oauth', 'width=600,height=700');
+                const w = window.open(`${base}/api/slack/oauthStart?state=${encodeURIComponent(token || '')}` , 'slack_oauth', 'width=600,height=700');
                 const listener = async (evt) => {
                   if (!evt || !evt.data || evt.data.type !== 'SLACK_CONNECTED') return;
                   try {
                     const id = String(evt.data.slackId || '');
                     if (!id) return;
-                    await fetch('/api/updateMySlackId', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ token, slackId: id }),
-                    });
                     onUpdated?.({ ...(initialProfile || {}), slackId: id });
                   } catch (_) {}
                   window.removeEventListener('message', listener);

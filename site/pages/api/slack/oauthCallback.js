@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
     if (!code || !CLIENT_ID || !CLIENT_SECRET || !REDIRECT_BASE) {
       return res.status(400).send('Slack OAuth not configured');
     }
@@ -30,6 +30,19 @@ export default async function handler(req, res) {
     });
     const userInfo = await userInfoRes.json();
     const slackUserId = userInfo && (userInfo['https://slack.com/user_id'] || userInfo.sub || '');
+
+    // If we have a token captured in state (from opener), update user immediately
+    const userToken = typeof state === 'string' ? state : '';
+    if (userToken && slackUserId) {
+      try {
+        await fetch(`${REDIRECT_BASE}/api/updateMySlackId`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: userToken, slackId: slackUserId }),
+        });
+      } catch (_) {}
+    }
+
     // Pass slackUserId back to app via simple HTML to postMessage the id then close
     return res.send(`<!doctype html><html><body><script>window.opener && window.opener.postMessage({ type: 'SLACK_CONNECTED', slackId: '${slackUserId || ''}' }, '*'); window.close();</script></body></html>`);
   } catch (e) {
