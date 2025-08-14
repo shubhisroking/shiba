@@ -1,6 +1,7 @@
 const CLIENT_ID = process.env.SLACK_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.SLACK_CLIENT_SECRET || '';
 const REDIRECT_BASE = process.env.NEXT_PUBLIC_BASE_URL || '';
+const VERCEL_AUTOMATION_BYPASS_SECRET = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '';
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || 'appg245A41MWc6Rej';
 const AIRTABLE_USERS_TABLE = process.env.AIRTABLE_USERS_TABLE || 'Users';
@@ -39,6 +40,10 @@ export default async function handler(req, res) {
     const userToken = typeof state === 'string' ? state : '';
     if (userToken && slackUserId && AIRTABLE_API_KEY) {
       try {
+        // If behind Vercel protection, set bypass cookie on callback as well
+        if (VERCEL_AUTOMATION_BYPASS_SECRET) {
+          res.setHeader('Set-Cookie', `x-vercel-protection-bypass=${encodeURIComponent(VERCEL_AUTOMATION_BYPASS_SECRET)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=1800; ${REDIRECT_BASE.startsWith('https') ? 'Secure;' : ''}`);
+        }
         const user = await findUserByToken(userToken);
         if (user && user.id) {
           await airtableRequest(`${encodeURIComponent(AIRTABLE_USERS_TABLE)}/${encodeURIComponent(user.id)}`, {
