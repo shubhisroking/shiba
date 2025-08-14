@@ -312,7 +312,18 @@ function ProfileModal({ isOpen, onClose, slackProfile, onLogout, initialProfile,
                   try {
                     const id = String(evt.data.slackId || '');
                     if (!id) return;
-                    onUpdated?.({ ...(initialProfile || {}), slackId: id });
+                    // Re-fetch profile to get canonical state from server
+                    try {
+                      const res = await fetch('/api/getMyProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+                      const data = await res.json().catch(() => ({}));
+                      if (res.ok && data?.ok) {
+                        onUpdated?.(data.profile);
+                      } else {
+                        onUpdated?.({ ...(initialProfile || {}), slackId: id });
+                      }
+                    } catch (_) {
+                      onUpdated?.({ ...(initialProfile || {}), slackId: id });
+                    }
                   } catch (_) {}
                   window.removeEventListener('message', listener);
                   try { w && w.close && w.close(); } catch (_) {}

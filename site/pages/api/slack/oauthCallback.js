@@ -22,11 +22,11 @@ export default async function handler(req, res) {
     if (!tokenJson.ok) {
       return res.status(400).send('Slack OAuth failed');
     }
-    const idToken = tokenJson.id_token;
-    // Optionally fetch userinfo for profile and sub (user id)
+    const accessToken = tokenJson.access_token;
+    // Fetch userinfo for profile and user id
     const userInfoRes = await fetch('https://slack.com/api/openid.connect.userInfo', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${idToken}` },
+      method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
     const userInfo = await userInfoRes.json();
     const slackUserId = userInfo && (userInfo['https://slack.com/user_id'] || userInfo.sub || '');
@@ -34,8 +34,9 @@ export default async function handler(req, res) {
     // If we have a token captured in state (from opener), update user immediately
     const userToken = typeof state === 'string' ? state : '';
     if (userToken && slackUserId) {
+      const baseUrl = REDIRECT_BASE || `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`;
       try {
-        await fetch(`${REDIRECT_BASE}/api/updateMySlackId`, {
+        await fetch(`${baseUrl}/api/updateMySlackId`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: userToken, slackId: slackUserId }),
