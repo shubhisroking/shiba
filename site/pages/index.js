@@ -9,7 +9,6 @@ import TopBar from "@/components/TopBar";
 
 export default function Home() {
   
-  const SlackId = null;
 
   const games = [
     {
@@ -164,7 +163,7 @@ export default function Home() {
               setDisableTopBar={setDisableTopBar}
               goHome={goHome}
               token={token}
-              SlackId={SlackId}
+              SlackId={profile?.slackId || null}
             />
           </div>
         </div>
