@@ -854,8 +854,8 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                   const incomingAll = Array.from(e.dataTransfer?.files || []);
                   const incoming = incomingAll.filter((f) => {
                     const t = (f.type || '').toLowerCase();
-                    // Only allow PNG for moments; disallow drops for ships
-                    return postType === 'moment' && (t === 'image/png');
+                    // Allow images, videos, and audio for moments; disallow drops for ships
+                    return postType === 'moment' && (t.startsWith('image/') || t.startsWith('video/') || t.startsWith('audio/'));
                   });
                   if (incoming.length === 0) return;
                   setPostFiles((prev) => {
@@ -936,7 +936,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                   <input
                     id="moments-file-input"
                     type="file"
-                    accept="image/png"
+                    accept="image/*,video/*,audio/*,.mp3,.mp4,.gif,.mov,.wav,.ogg,.m4a,.aac"
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       const f = (e.target.files && e.target.files[0]) || null;
@@ -949,7 +949,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                     className="moments-attach-btn"
                     onClick={() => document.getElementById('moments-file-input')?.click()}
                   >
-                    {postFiles.length ? `Selected: ${postFiles[0].name}` : 'Upload PNG/mp4/gif'}
+                    {postFiles.length ? `Selected: ${postFiles[0].name}` : 'Upload media file'}
                   </button>
                 </>
               )}
@@ -975,14 +975,17 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
               </div>
               <button
                 className="moments-post-btn"
-                disabled={
-                  isPosting ||
-                  !postContent.trim() ||
-                  (postType === 'moment' && postFiles.length === 0) ||
-                  (postType === 'ship' && (!buildFile || !uploadAuthToken))
-                }
+                disabled={isPosting}
                 onClick={async () => {
             if (!token || !game?.id || !postContent.trim()) return;
+            if (postType === 'moment' && postFiles.length === 0) {
+              alert('Add a media file (image/video/audio) of what you added in this update');
+              return;
+            }
+            if (postType === 'ship' && (!buildFile || !uploadAuthToken)) {
+              alert('Zip your godot web build and add it here with a msg of what you added!');
+              return;
+            }
             setIsPosting(true);
             setPostMessage("");
             try {
@@ -999,11 +1002,11 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                 const absolutePlayUrl = apiBase ? `${apiBase}${uploadResp.playUrl}` : uploadResp.playUrl;
                 var playLink = absolutePlayUrl;
               }
-              // For moments, attach PNG (<=5MB) via Airtable content endpoint
+              // For moments, attach any media file (<=5MB) via Airtable content endpoint
               if (postType === 'moment' && postFiles.length) {
                 const f = postFiles[0];
                 if (typeof f.size === 'number' && f.size > 5 * 1024 * 1024) {
-                  setPostMessage('PNG must be <= 5MB');
+                  setPostMessage('File must be <= 5MB');
                   setIsPosting(false);
                   return;
                 }
@@ -1013,7 +1016,7 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
                   reader.onerror = (err) => reject(err);
                   reader.readAsDataURL(f);
                 });
-                attachmentsUpload = [{ fileBase64: base64, contentType: 'image/png', filename: f.name || 'moment.png' }];
+                attachmentsUpload = [{ fileBase64: base64, contentType: f.type || 'application/octet-stream', filename: f.name || 'attachment' }];
               }
               const res = await fetch('/api/createPost', {
                 method: 'POST',
