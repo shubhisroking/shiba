@@ -17,11 +17,9 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         if (faqArea) {
           const faqRect = faqArea.getBoundingClientRect();
 
-          // Calculate position relative to the FAQ area
           const x = e.clientX - faqRect.left;
           const y = e.clientY - faqRect.top;
 
-          // Only show circle when mouse is within FAQ area
           if (x >= 0 && x <= faqRect.width && y >= 0 && y <= faqRect.height) {
             circleRef.current.style.display = "block";
             circleRef.current.style.left = `${x}px`;
@@ -553,9 +551,13 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         .info-screen .info-screen-overlay {
           position: absolute;
           top: 0;
-          height: 200px;
+          height: 300px;
           width: 100%;
-          background: linear-gradient(to bottom, black, transparent);
+          background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0) 100%
+          );
         }
 
         .info-screen .content {
@@ -758,7 +760,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         .faq-background {
           background-color: black;
           background-image: url("/landing/shiba.png");
-          background-size: 60px;
+          background-size: 120px;
           width: 100%;
           height: 100%;
           position: absolute;
@@ -772,19 +774,18 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(to bottom, black 0%, transparent 50%);
+          background: linear-gradient(to bottom, black 0%, transparent 60%);
           z-index: 3;
         }
 
         .purple-circle {
           position: absolute;
-          width: 250px;
-          height: 250px;
+          width: 500px;
+          height: 500px;
           background: radial-gradient(
             circle,
-            rgba(128, 0, 255, 1) 5%,
-            #ba7dcc88 30%,
-            transparent 80%
+            rgba(128, 0, 255, 0.8) 0%,
+            transparent 100%
           );
           border-radius: 50%;
           pointer-events: none;
@@ -792,6 +793,9 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           z-index: 2;
           transform: translate(-50%, -50%);
           display: none;
+          transition:
+            left 0.2s ease-out,
+            top 0.2s ease-out;
         }
 
         .faq {
@@ -811,7 +815,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
         .shiba-direct {
           border: 4px solid var(--red);
           border-radius: 8px;
-          background: linear-gradient(to bottom, white, #ed7874);
+          background: linear-gradient(to bottom, #ffb7b5, #ed7874);
           display: flex;
           flex-flow: column;
           align-items: center;
@@ -836,7 +840,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
           background-color: white;
           border-radius: 8px;
           border: 4px solid white;
-          background: linear-gradient(to bottom, white, #f7b748);
+          background: linear-gradient(to bottom, #ffdfa8, #f7b748);
         }
 
         .faq summary {
