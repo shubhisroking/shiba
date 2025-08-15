@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 /**
  * Renders a game from the Shiba API in an iframe.
@@ -11,17 +11,42 @@ import React, { useState } from "react";
  * - apiBase: string (optional) override API base URL; defaults to NEXT_PUBLIC_API_BASE or same-origin
  * - style: React.CSSProperties (optional)
  */
-export default function PlayGameComponent({ gameId, width = "100%", apiBase, style, gameName, thumbnailUrl }) {
+export default function PlayGameComponent({ gameId, width = "100%", apiBase, style, gameName, thumbnailUrl, token, onPlayCreated }) {
   const base = apiBase || process.env.NEXT_PUBLIC_API_BASE || "";
   const normalizedWidth = typeof width === "number" ? `${width}` : width;
   const [started, setStarted] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const iframeRef = useRef(null);
 
   if (!gameId) {
     return <div>Missing gameId.</div>;
   }
 
   const url = `${base}/play/${encodeURIComponent(gameId)}/`;
+
+  const handleFullScreen = () => {
+    if (iframeRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        iframeRef.current.requestFullscreen().catch(err => {
+          console.log('Error attempting to enable fullscreen:', err);
+        });
+      }
+    }
+  };
+
+  // Calculate button size based on screen size (small and relative)
+  const getButtonSize = () => {
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const minDimension = Math.min(screenWidth, screenHeight);
+    // Button size as percentage of screen's smaller dimension
+    const sizePercent = 0.04; // 4% of screen's smaller dimension
+    const minSize = 24; // Minimum 24px
+    const maxSize = 48; // Maximum 48px
+    return Math.max(minSize, Math.min(maxSize, minDimension * sizePercent));
+  };
 
   // Aspect-ratio container (always 16:9.6 = 5:3), full width
   return (
@@ -37,7 +62,7 @@ export default function PlayGameComponent({ gameId, width = "100%", apiBase, sty
       {!started && (
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             if (animating || started) return;
             try {
               const audio = new Audio('/diskSpin.mp3');
@@ -49,6 +74,39 @@ export default function PlayGameComponent({ gameId, width = "100%", apiBase, sty
               }
             } catch (_) {}
             setAnimating(true);
+            
+            // Create play record if token and gameName are provided
+            if (token && gameName) {
+              console.log('🎮 PlayGameComponent: Creating play record...');
+              console.log('🎮 Token available:', !!token);
+              console.log('🎮 Game name:', gameName);
+              try {
+                const requestBody = { token, gameName };
+                console.log('🎮 Request body:', JSON.stringify(requestBody, null, 2));
+                
+                const res = await fetch('/api/CreatePlay', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(requestBody),
+                });
+                console.log('🎮 Response status:', res.status);
+                console.log('🎮 Response ok:', res.ok);
+                
+                const data = await res.json().catch(() => ({}));
+                console.log('🎮 Response data:', JSON.stringify(data, null, 2));
+                
+                if (res.ok && data?.ok && onPlayCreated) {
+                  onPlayCreated(data.play);
+                }
+              } catch (error) {
+                console.error('❌ Failed to create play record:', error);
+              }
+            } else {
+              console.log('🎮 PlayGameComponent: Skipping play record creation');
+              console.log('🎮 Token available:', !!token);
+              console.log('🎮 Game name available:', !!gameName);
+            }
+            
             setTimeout(() => {
               setStarted(true);
               setAnimating(false);
@@ -135,7 +193,7 @@ export default function PlayGameComponent({ gameId, width = "100%", apiBase, sty
               width: 18%;
               height: 18%;
               margin: -9% 0 0 -9%;
-              background: white;
+              background: #444444;
               background-clip: padding-box;
               border: 10px solid rgba(0, 0, 0, 0.1);
               filter: drop-shadow(0 0 2px grey);
@@ -152,12 +210,48 @@ export default function PlayGameComponent({ gameId, width = "100%", apiBase, sty
         </button>
       )}
       {started && (
-        <iframe
-          src={url}
-          title={`Play ${gameId}`}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "1px solid #ddd", borderRadius: 8 }}
-          allow="autoplay; fullscreen"
-        />
+        <>
+          <iframe
+            ref={iframeRef}
+            src={url}
+            title={`Play ${gameId}`}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "1px solid #ddd", borderRadius: 8 }}
+            allow="autoplay; fullscreen"
+          />
+          <button
+            onClick={handleFullScreen}
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              width: `${getButtonSize()}px`,
+              height: `${getButtonSize()}px`,
+              background: "rgba(0, 0, 0, 0.6)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              borderRadius: "4px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: `${Math.max(12, getButtonSize() * 0.4)}px`,
+              backdropFilter: "blur(4px)",
+              transition: "all 0.2s ease",
+              zIndex: 10,
+            }}
+
+            title="Toggle fullscreen"
+          >
+            <svg
+              width="60%"
+              height="60%"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </svg>
+          </button>
+        </>
       )}
     </div>
   );

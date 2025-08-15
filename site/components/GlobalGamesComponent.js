@@ -20,7 +20,7 @@ function ShaderToyBackground() {
   );
 }
 
-export default function GlobalGamesComponent() {
+export default function GlobalGamesComponent({ token }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -200,6 +200,10 @@ export default function GlobalGamesComponent() {
                     thumbnailUrl={p.gameThumbnail || ''}
                     slackId={p.slackId}
                     createdAt={p.createdAt}
+                    token={token}
+                    onPlayCreated={(play) => {
+                      console.log('Play created:', play);
+                    }}
                   />
                 </div>
               ))}

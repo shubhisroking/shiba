@@ -1064,17 +1064,60 @@ function DetailView({ game, onBack, token, onUpdated, SlackId }) {
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {game.posts.map((p, pIdx) => (
               <div key={p.id || pIdx} className="moment-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <div className="slack-avatar" style={{ backgroundImage: slackProfile?.image ? `url(${slackProfile.image})` : 'none' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 700, fontSize: 13 }}>{slackProfile?.displayName || 'User'}</span>
-                    <span style={{ fontSize: 11, opacity: 0.6 }}>{p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="slack-avatar" style={{ backgroundImage: slackProfile?.image ? `url(${slackProfile.image})` : 'none' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>{slackProfile?.displayName || 'User'}</span>
+                      <span style={{ fontSize: 11, opacity: 0.6 }}>{p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</span>
+                    </div>
                   </div>
+                  <button
+                    style={{
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      color: '#b00020',
+                      background: 'none',
+                      border: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      opacity: 0.7,
+                      transition: 'opacity 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '1'}
+                    onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                    onClick={async () => {
+                      const confirmText = `DELETE POST`;
+                      const input = window.prompt(`Type "${confirmText}" to confirm deletion`);
+                      if (input !== confirmText) return;
+                      
+                      try {
+                        const res = await fetch('/api/deletePost', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ token, postId: p.id }),
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok && data?.ok) {
+                          // Remove the post from local state
+                          const updatedPosts = game.posts.filter((_, index) => index !== pIdx);
+                          onUpdated?.({ id: game.id, posts: updatedPosts });
+                        } else {
+                          alert('Failed to delete post');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('Failed to delete post');
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
                 <div style={{ marginTop: 8 }}>
                   {(() => {
                     const AttachmentRenderer = require('@/components/utils/PostAttachmentRenderer').default;
-                    return <AttachmentRenderer content={p.content} attachments={p.attachments} playLink={p.PlayLink} gameName={game?.name || ''} thumbnailUrl={game?.thumbnailUrl || ''} />;
+                    return <AttachmentRenderer content={p.content} attachments={p.attachments} playLink={p.PlayLink} gameName={game?.name || ''} thumbnailUrl={game?.thumbnailUrl || ''} token={token} onPlayCreated={(play) => { console.log('Play created:', play); }} />;
                   })()}
                 </div>
               </div>

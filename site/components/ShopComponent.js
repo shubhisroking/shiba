@@ -1,7 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ShopItemRenderer from "./utils/ShopItemRenderer";
+import useAudioManager from "./useAudioManager";
 
 export default function ShopComponent() {
+  const { play: playSound, stopAll } = useAudioManager(["mysteryShopMusic.mp3"]);
+
+  // Play shop music when component mounts
+  useEffect(() => {
+    playSound("mysteryShopMusic.mp3");
+    
+    // Stop music when component unmounts
+    return () => {
+      stopAll();
+    };
+  }, [playSound, stopAll]);
+
   // Sample shop items - you can replace these with real data
   const shopItems = [
     {
@@ -79,6 +92,24 @@ export default function ShopComponent() {
           <p style={{ marginBottom: 16, fontSize: 16 }}>
             You currently have <strong>0 SSS</strong>.
           </p>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            gap: "8px", 
+            marginBottom: "16px" 
+          }}>
+            <span style={{ fontSize: "16px", fontWeight: "600" }}>SSS =</span>
+            <img
+              src="/SSS.png"
+              alt="SSS Currency"
+              style={{
+                width: "24px",
+                height: "24px",
+                objectFit: "contain"
+              }}
+            />
+          </div>
           <p style={{ marginBottom: 16, textAlign: "left", fontSize: 14, opacity: 0.9 }}>
             You'll earn SSS from people playing your game and giving it a score. The maximum someone can give you is 25/25, which would result in 25 SSS from a single play of your game. They'll rate your game 1-5 on a scale of: Fun, Art, Creativity, Audio, and Mood.
           </p>

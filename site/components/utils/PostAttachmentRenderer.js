@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const PlayGameComponent = dynamic(() => import("@/components/utils/playGameComponent"), { ssr: false });
 
-export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt }) {
+export default function PostAttachmentRenderer({ content, attachments, playLink, gameName, thumbnailUrl, slackId, createdAt, token, onPlayCreated }) {
   const [slackProfile, setSlackProfile] = useState(null);
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +106,13 @@ export default function PostAttachmentRenderer({ content, attachments, playLink,
       ) : null}
       <div style={{ whiteSpace: 'pre-wrap' }}>{content || ''}</div>
       {gameId ? (
-        <PlayGameComponent gameId={gameId} gameName={gameName} thumbnailUrl={thumbnailUrl} />
+        <PlayGameComponent 
+          gameId={gameId} 
+          gameName={gameName} 
+          thumbnailUrl={thumbnailUrl} 
+          token={token}
+          onPlayCreated={onPlayCreated}
+        />
       ) : null}
       {Array.isArray(attachments) && attachments.length > 0 && (() => {
         const media = attachments.filter((att) => {
