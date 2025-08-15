@@ -523,6 +523,7 @@ export default function StartScreen({ setToken, requestOtp, verifyOtp }) {
 
       .game-item:hover {
       background: var(--yellow);
+      z-index: 5;
       }
 
       .game-item p {
