@@ -80,7 +80,7 @@ export default function ShopComponent() {
             You currently have <strong>0 SSS</strong>.
           </p>
           <p style={{ marginBottom: 16, textAlign: "left", fontSize: 14, opacity: 0.9 }}>
-            You'll earn SSS from people playing your game and giving it a score. The maximum someone can give you is 25/25, which would result in 25 SSS from a single play of your game. They'll rate your game 1-5 on a scale of: Fun, Creativity, Art, and Mood.
+            You'll earn SSS from people playing your game and giving it a score. The maximum someone can give you is 25/25, which would result in 25 SSS from a single play of your game. They'll rate your game 1-5 on a scale of: Fun, Art, Creativity, Audio, and Mood.
           </p>
           <p style={{ textAlign: "left", fontSize: 14, opacity: 0.9 }}>
             People will play your game if you playtest other people's games. You'll earn playtest tickets by shipping your game (uploading a demo of your current working version) and getting approved for hours spent making your game (time logged in Hackatime).
