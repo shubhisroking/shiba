@@ -21,7 +21,7 @@ export default function useAudioManager(fileNames = []) {
         audioMapRef.current.set(name, audio);
       }
     });
-  }, [Array.isArray(fileNames) ? fileNames.join("|") : String(fileNames)]);
+  }, [fileNames]);
 
   const stopAll = useCallback(() => {
     audioMapRef.current.forEach((audio) => {
